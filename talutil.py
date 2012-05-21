@@ -119,7 +119,7 @@ def check_fasta_pasta(seq_file):
 	
 	if not seq_line:
 		# Tell Drupal that this node errored out
-		raise TaskError("The provided FASTA file did not contain any valid sequences. Sequences must be preceeded by a header line with the format '> sequence_name'")
+		raise TaskError("The provided FASTA file did not contain any valid sequences. Sequences must be preceded by a header line with the format '> sequence_name'")
 		
 	seq_file.seek(seq_file_last)
 	
