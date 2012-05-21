@@ -164,8 +164,6 @@ def RunFindTALTask(options):
 	found_something = False
 	
 	for gene in FastaIterator(seq_file, alphabet=generic_dna):
-
-		logger("Scanning %s for binding sites" % (gene.id))	
 		
 		sequence = str(gene.seq).upper()
 		
@@ -174,10 +172,13 @@ def RunFindTALTask(options):
 		
 		if options.filter == 1:
 			if options.filterbase > len(sequence):
+				logger("Skipped %s as the provided cut site was greater than the sequence length" % (gene.id))
 				continue
 			cut_site_positions = [options.filterbase]
 		else:
 			cut_site_positions = range(len(sequence))
+		
+		logger("Scanning %s for binding sites" % (gene.id))
 		
 		for i in cut_site_positions:
 			
