@@ -127,18 +127,16 @@ def RunFindTALTask(options):
 	check_fasta_pasta(seq_file)
 	
 	if options.outpath == 'NA':
-	  output_filepath = options.outdir + options.job + options.outfile
+		output_filepath = options.outdir + options.job + options.outfile
 	else:
-	  output_filepath = options.outpath
+		output_filepath = options.outpath
 
 	out = open(output_filepath, 'w')
 	
 	table_ignores = ["TAL1 length", "TAL2 length", "Spacer length"]
 	
 	out.write("table_ignores:" + ','.join(table_ignores) + "\n")
-	
-	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
-	
+
 	strand_min = 15 if (options.arraymin is None or options.arraymin < 0) else options.arraymin
 	strand_max = 20 if (options.arraymax is None or options.arraymax < 0) else options.arraymax
 	
@@ -152,6 +150,16 @@ def RunFindTALTask(options):
 	
 	if options.cupstream != 0:
 		u_bases.append("C")
+		
+	out.write("options_used:" + ','.join([
+		"array_min = " + str(strand_min),
+		"array_max = " + str(strand_max),
+		"spacer_min = " + str(spacer_min),
+		"spacer_max = " + str(spacer_max),
+		"upstream_base = " + (" or ".join(u_bases))
+	]) + "\n")
+	
+	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
 	
 	found_something = False
 	
