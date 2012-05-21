@@ -151,7 +151,7 @@ def RunFindTALTask(options):
 	if options.cupstream != 0:
 		u_bases.append("C")
 		
-	out.write("options_used:" + ','.join([
+	out.write("options_used:" + ', '.join([
 		"array_min = " + str(strand_min),
 		"array_max = " + str(strand_max),
 		"spacer_min = " + str(spacer_min),
