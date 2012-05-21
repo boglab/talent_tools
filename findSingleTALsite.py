@@ -281,6 +281,27 @@ def RunFindSingleTALSiteTask(options):
 	if not options.revcomp:
 		table_ignores.append("Plus strand sequence")
 	out.write("table_ignores:" + string.join(table_ignores, ",") + "\n")
+	
+	u_bases = []
+	
+	if options.cupstream != 1:
+		u_bases.append("T")
+	
+	if options.cupstream != 0:
+		u_bases.append("C")
+		
+	out.write("options_used:" + ', '.join([
+		"array_min = " + str(options.arraymin),
+		"array_max = " + str(options.arraymax),
+		"upstream_base = " + (" or ".join(u_bases)),
+		("No T at position 1" if options.t1 else ""),
+		("No A at position 1" if options.a2 else ""),
+		("Sites must end in a T" if options.tn else ""),
+		("Sites may not end in G/NN" if options.gn else ""),
+		("Base composition rules enforced" if options.comp else ""),
+		("Search reverse complement" if options.revcomp else ""),
+	]) + "\n")
+	
 	out.write('Sequence Name\tTAL start\tTAL length\tRVD sequence\tStrand\tTarget sequence\tPlus strand sequence\n')
 	if len(gene_binding_sites.keys()) == 0:
 		out.write('No TALEN pairs matching your criteria were found.')
