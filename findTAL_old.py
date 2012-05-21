@@ -333,6 +333,28 @@ def RunFindTALOldTask(options):
 	out = open(filename, 'w')
 	table_ignores = ["TAL1 length", "TAL2 length", "Spacer length"]
 	out.write("table_ignores:" + string.join(table_ignores, ",") + "\n")
+	
+	u_bases = []
+	
+	if options.cupstream != 1:
+		u_bases.append("T")
+	
+	if options.cupstream != 0:
+		u_bases.append("C")
+		
+	out.write("options_used:" + ', '.join([
+		"array_min = " + str(options.arraymin),
+		"array_max = " + str(options.arraymax),
+		"spacer_min = " + str(options.min),
+		"spacer_max = " + str(options.max),
+		"upstream_base = " + (" or ".join(u_bases)),
+		("No T at position 1" if options.t1 else ""),
+		("No A at position 1" if options.a2 else ""),
+		("Sites must end in a T" if options.tn else ""),
+		("Sites may not end in G/NN" if options.gn else ""),
+		("Base composition rules enforced" if options.comp else ""),
+	]) + "\n")
+	
 	out.write('Sequence Name\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
 	if len(binding_sites_unique_plus_minus_pairs.keys())==0:
 		out.write('No TALEN pairs matching your criteria were found.')
