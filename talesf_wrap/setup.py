@@ -8,7 +8,7 @@ setup(ext_modules=[Extension(
                    language="c",
                    #include_dirs = ["../src"],
                    #library_dirs = ["../"],
-                   include_dirs = ["/usr/include"],
+                   include_dirs = ["/usr/include/talesf"],
                    library_dirs = ["/usr/lib"],
                    libraries = ["talesf"],
                    )],
