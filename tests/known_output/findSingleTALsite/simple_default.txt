@@ -1,0 +1,2 @@
+Sequence Name	TAL start	TAL length	RVD sequence	Strand	Target sequence	Plus strand sequence
+TAL_default	6	20	NI NN HD NG NG HD NI NI HD NG HD HD NI NI HD NI NI HD NN NG	Plus	AGCTTCAACTCCAACAACGT	AGCTTCAACTCCAACAACGT
