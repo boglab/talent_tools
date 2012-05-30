@@ -21,10 +21,12 @@ if celery_found:
 
 def RunTalesfTask(options):
 	
+	logger = create_logger(options.logFilepath)
+	
+	logger("Beginning")
+	
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
-	
-	logger = create_logger(options.logFilepath)
 	
 	if options.revcomp:
 		forwardOnly = False
