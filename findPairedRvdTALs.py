@@ -48,7 +48,7 @@ def RunPairedTalesfTask(options):
 	else:
 		seqFilename = options.fasta
 	
-	result = ScorePairedTalesfTask(seqFilename, rvdString, rvdString2, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 1, options.organism if options.genome else "")
+	result = ScorePairedTalesfTask(seqFilename, rvdString, rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.cutoff, options.min, options.max, 1, options.organism if options.genome else "")
 	
 	if(result == 1):
 		raise TaskError()
@@ -70,8 +70,10 @@ if __name__ == '__main__':
 	# program options
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
 	parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
-	parser.add_option('-c', '--revcomp', dest='revcomp', action = 'store_true', default = False, help='Search the reverse complement of the input FASTA sequences')
 	parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
+	parser.add_option('-s', '--rvds2', dest='rvdString2', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
+	parser.add_option('-m', '--min', dest='min', type='int', default=None, help='the minimum spacer size to try')
+	parser.add_option('-x', '--max', dest='max', type='int', default=None, help='the maximum spacer size to try')
 	(options, args) = parser.parse_args()
 	
 	if options.genome:
@@ -89,7 +91,7 @@ if __name__ == '__main__':
 		logger = create_logger(options.logFilepath)
 		logger("Your task has been queued and will be processed when a worker node becomes available")
 		
-		from findRvdTAL import PairedTalesfTask
+		from findPairedRvdTALs import PairedTalesfTask
 		#if run from drupal then it should be queued as a task
 		PairedTalesfTask.apply_async(kwargs=vars(options), queue=queue_name)
 		

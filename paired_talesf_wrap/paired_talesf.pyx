@@ -12,7 +12,7 @@ cdef extern from "Hashmap.h":
 cdef extern from "pairedtalesf.h":
         int run_paired_talesf_task(Hashmap *kwargs)
         
-def ScorePairedTalesfTask(char *seqfilename, char *rvd_string, char *rvd_string2, char *output_filepath, char *log_filepath, int c_upstream, double cutoff, int numprocs, char *organism_name):
+def ScorePairedTalesfTask(char *seqfilename, char *rvd_string, char *rvd_string2, char *output_filepath, char *log_filepath, int c_upstream, double cutoff, int spacer_min, int spacer_max, int numprocs, char *organism_name):
 
         cdef Hashmap *paired_talesf_kwargs = hashmap_new(32)
         
@@ -26,9 +26,13 @@ def ScorePairedTalesfTask(char *seqfilename, char *rvd_string, char *rvd_string2
         hashmap_add(paired_talesf_kwargs, "weight", &weight)
         hashmap_add(paired_talesf_kwargs, "cutoff", &cutoff)
         hashmap_add(paired_talesf_kwargs, "c_upstream", &c_upstream)
+        hashmap_add(paired_talesf_kwargs, "spacer_min", &spacer_min)
+        hashmap_add(paired_talesf_kwargs, "spacer_max", &spacer_max)
         hashmap_add(paired_talesf_kwargs, "num_procs", &numprocs)
         hashmap_add(paired_talesf_kwargs, "organism_name", organism_name)
-  
+        
+        # add a way to pass in an error string
+        
         cdef int task_result = run_paired_talesf_task(paired_talesf_kwargs)
         
         hashmap_delete(paired_talesf_kwargs, NULL)
