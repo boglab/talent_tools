@@ -1,6 +1,6 @@
 from paired_talesf import ScorePairedTalesfTask
 
-from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE
+from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 
 from talutil import OptParser, create_logger, OptionObject, TaskError
 
@@ -35,12 +35,9 @@ def RunPairedTalesfTask(options):
 	if not RVD_re.match(rvdString):
 		raise TaskError("RVD sequence is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
 	
-	valid_genome_organisms = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens']
-	valid_promoterome_organisms = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens']
-	
-	if ((options.genome and options.organism not in valid_genome_organisms) or (options.promoterome and options.organism not in valid_promoterome_organisms)):
+	if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 		raise TaskError("Invalid organism specified.")
-	
+		
 	if options.genome:
 		seqFilename = GENOME_FILE % options.organism
 	elif options.promoterome:

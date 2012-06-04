@@ -6,7 +6,9 @@ from Bio import Seq
 from Bio.Alphabet import generic_dna
 from Bio import SeqUtils
 
-from talconfig import BASE_DIR
+from paired_talesf import CountOffTargetsTask
+
+from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 from talutil import OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
 
 celery_found = True
@@ -42,6 +44,8 @@ class BindingSite:
 		self.seq2_rvd = kwargs.pop("seq2_rvd", "")
 		
 		self.upstream = kwargs.pop("upstream", "")
+		
+		self.offtarget_counts = kwargs.pop("offtarget_counts", [])
 		
 		self.re_sites = ""
 
@@ -121,6 +125,21 @@ def RunFindTALTask(options):
 	if options.filter == 1 and options.filterbase == -1:
 		raise TaskError("Filter by cut site selected but no cut site was provided")
 	
+	if options.check_offtargets:
+		
+		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
+			raise TaskError("Invalid organism specified.")
+		
+		offtarget_seq_filename = ""
+		
+		if options.genome:
+			offtarget_seq_filename = GENOME_FILE % options.organism
+		elif options.promoterome:
+			offtarget_seq_filename = PROMOTEROME_FILE % options.organism
+		else:
+			offtarget_seq_filename = options.fasta
+
+
 	seq_file = open(options.fasta, 'r')
 	
 	#Prescreen for FASTA pasta
@@ -295,6 +314,8 @@ def RunFindTALTask(options):
 								if options.filter == 0:
 									break_out = True
 								
+								site_offtarget_counts = CountOffTargetsTask(offtarget_seq_filename, tal1_rvd, tal2_rvd, options.cupstream, 3.0, spacer_size, spacer_size, 2)
+								
 								binding_site = BindingSite(cutsite = i,
 											   seq1_start = tal1_start,
 											   seq1_end = tal1_end,
@@ -307,7 +328,8 @@ def RunFindTALTask(options):
 											   seq2_end = tal2_end,
 											   seq2_seq = tal2_seq,
 											   seq2_rvd = tal2_rvd,
-											   upstream = u_base)
+											   upstream = u_base,
+											   offtarget_counts = site_offtarget_counts)
 								
 								findRESitesInSpacer(sequence, binding_site)
 								
@@ -376,6 +398,11 @@ if __name__ == '__main__':
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
 	parser.add_option('-i', '--filter', dest='filter', type='int', default = 0, help='0 for smallest at each cut site, 1 for each everything targetting a specific site, 2 for unfiltered')
 	parser.add_option('-b', '--filterbase', dest='filterbase', type='int', default = -1, help='if filter is 1 this gives the cutpos')
+	# Offtarget Options
+	parser.add_option('-e', '--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
+	parser.add_option('-v', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
+	parser.add_option('-w', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
+	parser.add_option('-s', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
 	#Legacy
 	parser.add_option('-j', '--job', dest='job', type='string', default='output', help='the job name, output files will have the job name as a prefix.')
 	parser.add_option('-d', '--outdir', dest='outdir', type='string', default = 'upload/', help='Directory in which to place output files.')

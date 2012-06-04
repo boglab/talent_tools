@@ -6,3 +6,5 @@ PROMOTEROME_FILE = PROMOTEROME_DIR + "/%s.fasta"
 RVD_SEQ_REGEX = r'^(?:(?:[ACDEFGHIKLMNPQRSTVWY][ACDEFGHIKLMNPQRSTVWY\*])[\s_]+){11,30}(?:[ACDEFGHIKLMNPQRSTVWY][ACDEFGHIKLMNPQRSTVWY\*])$'
 #DRUPAL_CALLBACK_URL = "http://talent.local/talent/jobcomplete/"
 DRUPAL_CALLBACK_URL = "https://boglab.plp.iastate.edu/talent/jobcomplete/"
+VALID_GENOME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens']
+VALID_PROMOTEROME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens']
