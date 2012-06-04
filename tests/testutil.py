@@ -60,6 +60,9 @@ class ResultTable(object):
 			
 		return dataset
 
+class SortedResultTable(ResultTable):
+	output_sorted = True
+	
 class TalentTestCase(unittest.TestCase):
 	
 	def assertResultTablesEqual(self, first_table, second_table):
@@ -80,8 +83,11 @@ class TalentTestCase(unittest.TestCase):
 	def getDefaultOptions(self, result_filename):
 		
 		options = self.default_options.copy()
-		options['outpath'] = (self.test_output_dir + result_filename)
-		
+		if 'outpath' in options:
+			options['outpath'] = (self.test_output_dir + result_filename)
+		else:
+			options['outputFilepath'] = (self.test_output_dir + result_filename)
+			
 		return options
 
 
