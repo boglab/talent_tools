@@ -110,6 +110,17 @@ def filterByTALSize(x, y):
 	else:
 		return y if y_average_tal_len < x_average_tal_len else x
 
+def filterByOfftargetCount(x, y):
+	
+	# offtarget_counts[4] is the total offtargets
+	
+	if x.offtarget_counts[4] < y.offtarget_counts[4]:
+		return x
+	elif y.offtarget_counts[4] < x.offtarget_counts[4]:
+		return y
+	else:
+		return filterByTALSize(x, y)
+
 def RunFindTALTask(options):
 	
 	logger = create_logger(options.logFilepath)
@@ -178,7 +189,7 @@ def RunFindTALTask(options):
 		"upstream_base = " + (" or ".join(u_bases))
 	]) + "\n")
 	
-	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
+	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\tOfftarget Counts\n')
 	
 	found_something = False
 	
@@ -260,9 +271,9 @@ def RunFindTALTask(options):
 					
 					break_out = False
 					
-					for u_pos in u_positions:
+					for u_pos in (u_positions if not options.check_offtargets else reversed(u_positions)):
 						
-						for d_pos in d_positions:
+						for d_pos in (d_positions if not options.check_offtargets else reversed(d_positions)):
 						
 							#uses inclusive start, exclusive end
 							tal1_start = u_pos + 1
@@ -311,10 +322,16 @@ def RunFindTALTask(options):
 								
 								found_something = True
 								
-								if options.filter == 0:
-									break_out = True
+								site_offtarget_counts = []
 								
-								site_offtarget_counts = CountOffTargetsTask(offtarget_seq_filename, tal1_rvd, tal2_rvd, options.cupstream, 3.0, spacer_size, spacer_size, 2)
+								if options.filter == 0 and not options.check_offtargets:
+									break_out = True
+								elif options.check_offtargets:
+									site_offtarget_counts = CountOffTargetsTask(offtarget_seq_filename, tal1_rvd, tal2_rvd, options.cupstream, 3.0, spacer_min, spacer_max, 4)
+									if site_offtarget_counts[4] == 0:
+										break_out = True
+								
+								print(site_offtarget_counts)
 								
 								binding_site = BindingSite(cutsite = i,
 											   seq1_start = tal1_start,
@@ -350,14 +367,20 @@ def RunFindTALTask(options):
 				
 				if len(spacer_potential_sites) > 0:
 					if options.filter == 0:
-						cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
+						if options.check_offtargets:
+							cut_site_potential_sites.append(reduce(filterByOfftargetCount, spacer_potential_sites))
+						else:
+							cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
 					else:
 						cut_site_potential_sites.extend(spacer_potential_sites)
 				
 			
 			if len(cut_site_potential_sites) > 0:
 				if options.filter == 0:
-					binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
+					if options.check_offtargets:
+						binding_sites.append(reduce(filterByOfftargetCount, cut_site_potential_sites))
+					else:
+						binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
 				else:
 					binding_sites.extend(cut_site_potential_sites)
 		
@@ -374,7 +397,8 @@ def RunFindTALTask(options):
 				binding_site.seq1_rvd,
 				binding_site.seq2_rvd,
 				binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
-				binding_site.re_sites
+				binding_site.re_sites,
+				str(binding_site.offtarget_counts)
 			]) + "\n")
 
 	if not found_something:
