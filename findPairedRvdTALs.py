@@ -32,8 +32,12 @@ def RunPairedTalesfTask(options):
 	rvdString2 = options.rvdString2.strip().upper()
 	
 	RVD_re = re.compile(RVD_SEQ_REGEX, re.IGNORECASE | re.MULTILINE)
+	
 	if not RVD_re.match(rvdString):
 		raise TaskError("RVD sequence is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
+		
+	if not RVD_re.match(rvdString2):
+		raise TaskError("RVD sequence 2 is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
 	
 	if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 		raise TaskError("Invalid organism specified.")
@@ -45,7 +49,7 @@ def RunPairedTalesfTask(options):
 	else:
 		seqFilename = options.fasta
 	
-	result = ScorePairedTalesfTask(seqFilename, rvdString, rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.cutoff, options.min, options.max, 1, options.organism if options.genome else "")
+	result = ScorePairedTalesfTask(seqFilename, rvdString, rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.cutoff, options.min, options.max, 2, options.organism if options.genome else "")
 	
 	if(result == 1):
 		raise TaskError()
@@ -58,7 +62,7 @@ if __name__ == '__main__':
 	# input options
 	parser.add_option('-f', '--fasta', dest='fasta', type='string', default='NA', help='Path to input file if input is not a genome or promoterome')
 	parser.add_option('-y', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
-	parser.add_option('-x', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
+	parser.add_option('-w', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
 	parser.add_option('-o', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
 	# output options
 	parser.add_option('-p', '--outpath', dest='outputFilepath', type='string', default = 'NA', help='Template file path for output file')
