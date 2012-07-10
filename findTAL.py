@@ -6,7 +6,7 @@ from Bio import Seq
 from Bio.Alphabet import generic_dna
 from Bio import SeqUtils
 
-from talconfig import BASE_DIR
+from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 from talutil import OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
 
 celery_found = True
@@ -20,6 +20,8 @@ except ImportError:
 import re
 import math
 import pickle
+
+from btfcount import TargetFinderCountTask
 
 #Define a binding site object
 class BindingSite:
@@ -42,6 +44,8 @@ class BindingSite:
 		self.seq2_rvd = kwargs.pop("seq2_rvd", "")
 		
 		self.upstream = kwargs.pop("upstream", "")
+		
+		self.offtarget_counts = kwargs.pop("offtarget_counts", [])
 		
 		self.re_sites = ""
 
@@ -106,6 +110,15 @@ def filterByTALSize(x, y):
 	else:
 		return y if y_average_tal_len < x_average_tal_len else x
 
+def filterByOfftargetCount(x, y):
+	x_average_tal_len = float(len(x.seq1_seq) + len(x.seq2_seq)) / 2
+	y_average_tal_len = float(len(y.seq1_seq) + len(y.seq2_seq)) / 2
+	
+	if x_average_tal_len == y_average_tal_len:
+		return y if len(y.spacer_seq) < len(x.spacer_seq) else x
+	else:
+		return y if y_average_tal_len > x_average_tal_len else x
+
 def RunFindTALTask(options):
 	
 	logger = create_logger(options.logFilepath)
@@ -120,7 +133,24 @@ def RunFindTALTask(options):
 		
 	if options.filter == 1 and options.filterbase == -1:
 		raise TaskError("Filter by cut site selected but no cut site was provided")
-	
+
+	if options.check_offtargets:
+
+		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
+			raise TaskError("Invalid organism specified.")
+		
+		if options.filter == 2:
+			raise TaskError("Off-target counting is not allowed for unfiltered queries.")
+		
+		offtarget_seq_filename = ""
+		
+		if options.genome:
+			offtarget_seq_filename = GENOME_FILE % options.organism
+		elif options.promoterome:
+			offtarget_seq_filename = PROMOTEROME_FILE % options.organism
+		else:
+			offtarget_seq_filename = options.fasta
+
 	seq_file = open(options.fasta, 'r')
 	
 	#Prescreen for FASTA pasta
@@ -159,7 +189,9 @@ def RunFindTALTask(options):
 		"upstream_base = " + (" or ".join(u_bases))
 	]) + "\n")
 	
-	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
+	offtarget_header = "\tOff-Target Counts" if options.check_offtargets else ""
+	
+	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer' + offtarget_header + '\n')
 	
 	found_something = False
 	
@@ -179,6 +211,8 @@ def RunFindTALTask(options):
 			cut_site_positions = range(len(sequence))
 		
 		logger("Scanning %s for binding sites" % (gene.id))
+		
+		off_target_pairs = []
 		
 		for i in cut_site_positions:
 			
@@ -241,9 +275,9 @@ def RunFindTALTask(options):
 					
 					break_out = False
 					
-					for u_pos in u_positions:
+					for u_pos in reversed(u_positions):
 						
-						for d_pos in d_positions:
+						for d_pos in reversed(d_positions):
 						
 							#uses inclusive start, exclusive end
 							tal1_start = u_pos + 1
@@ -328,19 +362,36 @@ def RunFindTALTask(options):
 				
 				if len(spacer_potential_sites) > 0:
 					if options.filter == 0:
-						cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
+						if options.check_offtargets:
+							cut_site_potential_sites.append(reduce(filterByOfftargetCount, spacer_potential_sites))
+						else:
+							cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
 					else:
 						cut_site_potential_sites.extend(spacer_potential_sites)
 				
 			
 			if len(cut_site_potential_sites) > 0:
 				if options.filter == 0:
-					binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
+					if options.check_offtargets:
+						binding_sites.append(reduce(filterByOfftargetCount, cut_site_potential_sites))
+					else:
+						binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
 				else:
 					binding_sites.extend(cut_site_potential_sites)
 		
-		for binding_site in binding_sites:
-			out.write("\t".join([
+		if options.check_offtargets:
+			
+			for i, binding_site in enumerate(binding_sites):
+				off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
+			
+			off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+			
+			for i, binding_site in enumerate(binding_sites):
+				binding_site.offtarget_counts = off_target_counts[i]
+		
+		for i, binding_site in enumerate(binding_sites):
+			
+			output_items = [
 				gene.id,
 				str(binding_site.cutsite),
 				str(binding_site.seq1_start),
@@ -352,8 +403,13 @@ def RunFindTALTask(options):
 				binding_site.seq1_rvd,
 				binding_site.seq2_rvd,
 				binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
-				binding_site.re_sites
-			]) + "\n")
+				binding_site.re_sites,
+			]
+			
+			if options.check_offtargets:
+				output_items.append(' '.join(str(binding_site.offtarget_counts[x]) for x in range(5)))
+			
+			out.write("\t".join(output_items) + "\n")
 
 	if not found_something:
 		out.write('No TALEN pairs matching your criteria were found.')
@@ -376,6 +432,11 @@ if __name__ == '__main__':
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
 	parser.add_option('-i', '--filter', dest='filter', type='int', default = 0, help='0 for smallest at each cut site, 1 for each everything targetting a specific site, 2 for unfiltered')
 	parser.add_option('-b', '--filterbase', dest='filterbase', type='int', default = -1, help='if filter is 1 this gives the cutpos')
+	# Offtarget Options
+	parser.add_option('-e', '--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
+	parser.add_option('-v', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
+	parser.add_option('-w', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
+	parser.add_option('-s', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
 	#Legacy
 	parser.add_option('-j', '--job', dest='job', type='string', default='output', help='the job name, output files will have the job name as a prefix.')
 	parser.add_option('-d', '--outdir', dest='outdir', type='string', default = 'upload/', help='Directory in which to place output files.')
