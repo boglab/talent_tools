@@ -28,6 +28,9 @@ def RunTalesfTask(options):
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
 	
+	if options.cutoff not in [3, 3.5, 4]:
+		raise TaskError("Invalid cutoff value provided")
+	
 	if options.revcomp:
 		forwardOnly = False
 	else:
