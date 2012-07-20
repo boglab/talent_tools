@@ -303,9 +303,7 @@ def RunFindSingleTALSiteTask(options):
 	]) + "\n")
 	
 	out.write('Sequence Name\tTAL start\tTAL length\tRVD sequence\tStrand\tTarget sequence\tPlus strand sequence\n')
-	if len(gene_binding_sites.keys()) == 0:
-		out.write('No TALEN pairs matching your criteria were found.')
-	else:
+	if len(gene_binding_sites.keys()) > 0:
 		for gene in sorted(gene_binding_sites.keys()):
 			for start_site in gene_binding_sites[gene].keys():
 				for binding_site in gene_binding_sites[gene][start_site]:

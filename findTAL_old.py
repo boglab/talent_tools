@@ -356,9 +356,7 @@ def RunFindTALOldTask(options):
 	]) + "\n")
 	
 	out.write('Sequence Name\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer\n')
-	if len(binding_sites_unique_plus_minus_pairs.keys())==0:
-		out.write('No TALEN pairs matching your criteria were found.')
-	else:
+	if len(binding_sites_unique_plus_minus_pairs.keys()) > 0:
 		for gene in binding_sites_unique_plus_minus_pairs.keys():
 			for start_site in binding_sites_unique_plus_minus_pairs[gene].keys():
 				for binding_site in binding_sites_unique_plus_minus_pairs[gene][start_site]:

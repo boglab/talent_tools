@@ -411,9 +411,6 @@ def RunFindTALTask(options):
 			
 			out.write("\t".join(output_items) + "\n")
 
-	if not found_something:
-		out.write('No TALEN pairs matching your criteria were found.')
-	
 	out.close()
 	seq_file.close()
 
