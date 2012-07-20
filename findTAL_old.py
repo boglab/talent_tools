@@ -100,7 +100,7 @@ for nt in DNA:
 	percent_comp_range_top[nt] = avg_percents[nt] + 2*stdev[nt]
 	percent_comp_range_bottom[nt] = avg_percents[nt] - 2*stdev[nt]
 
-with open(BASE_DIR + "/re_dict_dump", "rb") as re_dict_file:
+with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
 	NEB_RE_sites = pickle.load(re_dict_file)
 	
 if celery_found:

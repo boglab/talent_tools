@@ -60,7 +60,7 @@ stdev = {'A':0.16, 'C':0.13, 'G':0.08, 'T':0.10}
 
 strong_binding_RVDs = {'A':'NI', 'C':'HD', 'G':'NN', 'T':'NG'}
 
-with open(BASE_DIR + "/re_dict_dump", "rb") as re_dict_file:
+with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
 	NEB_RE_sites = pickle.load(re_dict_file)
 
 if celery_found:
