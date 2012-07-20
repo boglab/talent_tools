@@ -8,8 +8,8 @@ setup(ext_modules=[Extension(
                    language="c",
                    #include_dirs = ["../src"],
                    #library_dirs = ["../"],
-                   include_dirs = ["/usr/include/talesf"],
+                   include_dirs = ["/usr/include/bcutils", "/usr/include/talesf"],
                    library_dirs = ["/usr/lib"],
-                   libraries = ["talesf"],
+                   libraries = ["bcutils", "talesf"],
                    )],
       cmdclass={'build_ext': build_ext})
