@@ -21,7 +21,11 @@ import re
 import math
 import pickle
 
-from btfcount import TargetFinderCountTask
+tfcount_found = True
+try:
+	from btfcount import TargetFinderCountTask
+except ImportError:
+	tfcount_found = False
 
 #Define a binding site object
 class BindingSite:
@@ -135,7 +139,10 @@ def RunFindTALTask(options):
 		raise TaskError("Filter by cut site selected but no cut site was provided")
 
 	if options.check_offtargets:
-
+		
+		if not tfcount_found:
+			raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
+		
 		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 			raise TaskError("Invalid organism specified.")
 		
@@ -384,7 +391,7 @@ def RunFindTALTask(options):
 			for i, binding_site in enumerate(binding_sites):
 				off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
 			
-			off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+			off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
 			
 			for i, binding_site in enumerate(binding_sites):
 				binding_site.offtarget_counts = off_target_counts[i]
@@ -464,7 +471,12 @@ if __name__ == '__main__':
 		# that the Celery workers are expecting 
 		from findTAL import FindTALTask
 		
-		FindTALTask.apply_async(kwargs=vars(options), queue="findtal")
+		if options.check_offtargets:
+			job_queue = "findtal_offtargets"
+		else:
+			job_queue = "findtal"
+		
+		FindTALTask.apply_async(kwargs=vars(options), queue=job_queue)
 		
 	else:
 		
