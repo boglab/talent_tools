@@ -88,6 +88,15 @@ def RunFindSingleTALSiteTask(options):
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
 	
+	if options.arraymin < 10 or options.arraymin > 35:
+		raise TaskError("Minimum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < 10 or options.arraymax > 35:
+		raise TaskError("Maximum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < options.arraymin:
+		raise TaskError("Maximum repeat array length must be greater than the minimum repeat array length")
+	
 	logger = create_logger(options.logFilepath)
 	
 	seq_file = open(options.fasta, 'r')
@@ -96,7 +105,7 @@ def RunFindSingleTALSiteTask(options):
 	check_fasta_pasta(seq_file)
 		
 	#Set other parameters
-	if options.arraymin is None or options.arraymax is None or options.arraymin < 0 or options.arraymax < 0 or options.arraymax < options.arraymin:
+	if options.arraymin is None or options.arraymax is None:
 		half_site_size = range(15, 31)
 	else:
 		half_site_size = range(options.arraymin, options.arraymax + 1)
