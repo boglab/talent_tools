@@ -116,6 +116,24 @@ def RunFindTALOldTask(options):
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
 	
+	if options.arraymin < 10 or options.arraymin > 35:
+		raise TaskError("Minimum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < 10 or options.arraymax > 35:
+		raise TaskError("Maximum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < options.arraymin:
+		raise TaskError("Maximum repeat array length must be greater than the minimum repeat array length")
+	
+	if options.min < 10 or options.min > 35:
+		raise TaskError("Minimum spacer length must be between 10 and 35")
+	
+	if options.max < 10 or options.max > 35:
+		raise TaskError("Maximum spacer length must be between 10 and 35")
+	
+	if options.max < options.min:
+		raise TaskError("Maximum spacer length cannot be less than the minimum spacer length")
+	
 	logger = create_logger(options.logFilepath)
 	
 	seq_file = open(options.fasta, 'r')
@@ -126,7 +144,7 @@ def RunFindTALOldTask(options):
 	logger("Beginning")
 	
 	#Set other parameters
-	if options.arraymin is None or options.arraymax is None or options.arraymin < 0 or options.arraymax < 0 or options.arraymax < options.arraymin:
+	if options.arraymin is None or options.arraymax is None:
 		half_site_size = range(15, 31)
 	else:
 		half_site_size = range(options.arraymin, options.arraymax + 1)
