@@ -137,7 +137,25 @@ def RunFindTALTask(options):
 		
 	if options.filter == 1 and options.filterbase == -1:
 		raise TaskError("Filter by cut site selected but no cut site was provided")
-
+	
+	if options.arraymin < 10 or options.arraymin > 35:
+		raise TaskError("Minimum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < 10 or options.arraymax > 35:
+		raise TaskError("Maximum repeat array length must be between 10 and 35")
+	
+	if options.arraymax < options.arraymin:
+		raise TaskError("Maximum repeat array length must be greater than the minimum repeat array length")
+	
+	if options.min < 10 or options.min > 35:
+		raise TaskError("Minimum spacer length must be between 10 and 35")
+	
+	if options.max < 10 or options.max > 35:
+		raise TaskError("Maximum spacer length must be between 10 and 35")
+	
+	if options.max < options.min:
+		raise TaskError("Maximum spacer length cannot be less than the minimum spacer length")
+	
 	if options.check_offtargets:
 		
 		if not tfcount_found:
@@ -174,8 +192,8 @@ def RunFindTALTask(options):
 	
 	out.write("table_ignores:" + ','.join(table_ignores) + "\n")
 
-	strand_min = 15 if (options.arraymin is None or options.arraymin < 0) else options.arraymin
-	strand_max = 20 if (options.arraymax is None or options.arraymax < 0) else options.arraymax
+	strand_min = 15 if options.arraymin is None else options.arraymin
+	strand_max = 20 if options.arraymax is None else options.arraymax
 	
 	spacer_min = 15 if options.min is None else options.min
 	spacer_max = 30 if options.max is None else options.max
