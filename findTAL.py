@@ -32,6 +32,8 @@ class BindingSite:
 	
 	def __init__(self, **kwargs):
 		
+		self.seq_id = kwargs.pop("seq_id", 0)
+		
 		self.cutsite = kwargs.pop("cutsite", 0)
 		self.seq1_start = kwargs.pop("seq1_start", 0)
 		self.seq1_end = kwargs.pop("seq1_end", 0)
@@ -218,14 +220,13 @@ def RunFindTALTask(options):
 	
 	out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer' + offtarget_header + '\n')
 	
-	found_something = False
+	binding_sites = []
 	
 	for gene in FastaIterator(seq_file, alphabet=generic_dna):
 		
 		sequence = str(gene.seq).upper()
 		
 		site_entry_counts = {}
-		binding_sites = []
 		
 		if options.filter == 1:
 			if options.filterbase > len(sequence):
@@ -236,8 +237,6 @@ def RunFindTALTask(options):
 			cut_site_positions = range(len(sequence))
 		
 		logger("Scanning %s for binding sites" % (gene.id))
-		
-		off_target_pairs = []
 		
 		for i in cut_site_positions:
 			
@@ -349,12 +348,11 @@ def RunFindTALTask(options):
 								
 								tal2_rvd = ' '.join(tal2_rvd)
 								
-								found_something = True
-								
 								if options.filter == 0:
 									break_out = True
 								
-								binding_site = BindingSite(cutsite = i,
+								binding_site = BindingSite(seq_id = gene.id,
+											   cutsite = i,
 											   seq1_start = tal1_start,
 											   seq1_end = tal1_end,
 											   seq1_seq = tal1_seq,
@@ -403,38 +401,40 @@ def RunFindTALTask(options):
 						binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
 				else:
 					binding_sites.extend(cut_site_potential_sites)
-		
-		if options.check_offtargets:
-			
-			for i, binding_site in enumerate(binding_sites):
-				off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
-			
-			off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
-			
-			for i, binding_site in enumerate(binding_sites):
-				binding_site.offtarget_counts = off_target_counts[i]
+	
+	off_target_pairs = []
+	
+	if options.check_offtargets:
 		
 		for i, binding_site in enumerate(binding_sites):
-			
-			output_items = [
-				gene.id,
-				str(binding_site.cutsite),
-				str(binding_site.seq1_start),
-				str(binding_site.seq2_end - 1),
-				str(binding_site.seq1_end - binding_site.seq1_start),
-				str(binding_site.seq2_end - binding_site.seq2_start),
-				str(binding_site.spacer_end - binding_site.spacer_start),
-				str(binding_site.spacer_start) + '-' + str(binding_site.spacer_end - 1),
-				binding_site.seq1_rvd,
-				binding_site.seq2_rvd,
-				binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
-				binding_site.re_sites,
-			]
-			
-			if options.check_offtargets:
-				output_items.append(' '.join(str(binding_site.offtarget_counts[x]) for x in range(5)))
-			
-			out.write("\t".join(output_items) + "\n")
+			off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
+		
+		off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+		
+		for i, binding_site in enumerate(binding_sites):
+			binding_site.offtarget_counts = off_target_counts[i]
+	
+	for i, binding_site in enumerate(binding_sites):
+		
+		output_items = [
+			str(binding_site.seq_id),
+			str(binding_site.cutsite),
+			str(binding_site.seq1_start),
+			str(binding_site.seq2_end - 1),
+			str(binding_site.seq1_end - binding_site.seq1_start),
+			str(binding_site.seq2_end - binding_site.seq2_start),
+			str(binding_site.spacer_end - binding_site.spacer_start),
+			str(binding_site.spacer_start) + '-' + str(binding_site.spacer_end - 1),
+			binding_site.seq1_rvd,
+			binding_site.seq2_rvd,
+			binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
+			binding_site.re_sites,
+		]
+		
+		if options.check_offtargets:
+			output_items.append(' '.join(str(binding_site.offtarget_counts[x]) for x in range(5)))
+		
+		out.write("\t".join(output_items) + "\n")
 
 	out.close()
 	seq_file.close()
