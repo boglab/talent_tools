@@ -156,9 +156,6 @@ def validateOptions(options):
 	
 	if options.check_offtargets:
 		
-		if not tfcount_found:
-			raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
-		
 		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 			raise TaskError("Invalid organism specified.")
 		
@@ -166,7 +163,18 @@ def validateOptions(options):
 			raise TaskError("Off-target counting is not allowed for unfiltered queries.")
 	
 	with open(options.fasta, 'r') as seq_file:
+		
 		check_fasta_pasta(seq_file)
+		
+		if options.check_offtargets:
+			
+			genes = [gene for gene in FastaIterator(seq_file, alphabet=generic_dna)]
+			
+			if len(genes) > 1:
+				raise TaskError("Off-target counting is only available for input with one sequence that has 1000 or less bases")
+			
+			if len(gene.seq) > 1000:
+				raise TaskError("Off-target counting is only available for input with one sequence that has 1000 or less bases")
 
 def RunFindTALTask(options):
 	
@@ -175,6 +183,9 @@ def RunFindTALTask(options):
 	logger("Beginning")
 	
 	if options.check_offtargets:
+		
+		if not tfcount_found:
+			raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
 		
 		offtarget_seq_filename = ""
 		
