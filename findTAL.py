@@ -7,7 +7,7 @@ from Bio.Alphabet import generic_dna
 from Bio import SeqUtils
 
 from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
-from talutil import OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
+from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
 
 celery_found = True
 try:
@@ -125,11 +125,7 @@ def filterByOfftargetCount(x, y):
 	else:
 		return y if y_average_tal_len > x_average_tal_len else x
 
-def RunFindTALTask(options):
-	
-	logger = create_logger(options.logFilepath)
-	
-	logger("Beginning")
+def validateOptions(options):
 	
 	if options.fasta == 'NA':
 		raise TaskError("FASTA file required.")
@@ -168,6 +164,17 @@ def RunFindTALTask(options):
 		
 		if options.filter == 2:
 			raise TaskError("Off-target counting is not allowed for unfiltered queries.")
+	
+	with open(options.fasta, 'r') as seq_file:
+		check_fasta_pasta(seq_file)
+
+def RunFindTALTask(options):
+	
+	logger = create_logger(options.logFilepath)
+	
+	logger("Beginning")
+	
+	if options.check_offtargets:
 		
 		offtarget_seq_filename = ""
 		
@@ -179,9 +186,6 @@ def RunFindTALTask(options):
 			offtarget_seq_filename = options.fasta
 
 	seq_file = open(options.fasta, 'r')
-	
-	#Prescreen for FASTA pasta
-	check_fasta_pasta(seq_file)
 	
 	if options.outpath == 'NA':
 		output_filepath = options.outdir + options.job + options.outfile
@@ -440,7 +444,7 @@ def RunFindTALTask(options):
 	seq_file.close()
 
 	logger('Finished')
-	
+
 if __name__ == '__main__':
 	
 	# import arguments and options
@@ -473,7 +477,8 @@ if __name__ == '__main__':
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
 	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Optional node id if this script was called from Drupal.')
 	(options, args) = parser.parse_args()
-
+	
+	validate_options_handler(validateOptions, options)
 	
 	if options.nodeID != -1:
 		

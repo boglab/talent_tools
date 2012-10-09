@@ -33,7 +33,7 @@ from Bio import Seq
 from Bio.Alphabet import generic_dna
 from Bio import SeqUtils
 
-from talutil import OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError
+from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError
 
 celery_found = True
 try:
@@ -80,11 +80,11 @@ if celery_found:
 	def FindSingleTALSiteTask(*args, **kwargs):
 		RunFindSingleTALSiteTask(OptionObject(**kwargs))
 
-def RunFindSingleTALSiteTask(options):
-
+def validateOptions(options):
+	
 	if options.fasta == 'NA':
 		raise TaskError('FASTA file required.')
-		
+	
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
 	
@@ -97,13 +97,15 @@ def RunFindSingleTALSiteTask(options):
 	if options.arraymax < options.arraymin:
 		raise TaskError("Maximum repeat array length must be greater than the minimum repeat array length")
 	
+	with open(options.fasta, 'r') as seq_file:
+		check_fasta_pasta(seq_file)
+
+def RunFindSingleTALSiteTask(options):
+
 	logger = create_logger(options.logFilepath)
 	
 	seq_file = open(options.fasta, 'r')
 
-	#Prescreen for FASTA pasta
-	check_fasta_pasta(seq_file)
-		
 	#Set other parameters
 	if options.arraymin is None or options.arraymax is None:
 		half_site_size = range(15, 31)
@@ -349,6 +351,8 @@ if __name__ == '__main__':
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
 	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Optional node id if this script was called from Drupal.')
 	(options, args) = parser.parse_args()
+	
+	validate_options_handler(validateOptions, options)
 	
 	if options.nodeID != -1:
 		

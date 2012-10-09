@@ -21,26 +21,41 @@ from talconfig import DRUPAL_CALLBACK_URL
 class TaskError(ValueError):
 	pass
 
+def task_on_success(kwargs):
+	if "nodeID" in kwargs:
+		urllib.urlopen(DRUPAL_CALLBACK_URL + str(kwargs['nodeID']) + "/0")
+
+def task_on_error(exc, kwargs):
+	logger = create_logger(kwargs['logFilepath'])
+	
+	errorType = type(exc).__name__
+	
+	if errorType == "TaskError":
+		logger("%s: %s" % (errorType, str(exc)))
+	else:
+		logger("Internal error occurred. Please try again later.")
+	
+	if "nodeID" in kwargs:
+		urllib.urlopen(DRUPAL_CALLBACK_URL + str(kwargs['nodeID']) + "/1")
+
 if celery_found:
 	class BaseTask(Task):
-	
+		
 		abstract = True
-	
+		
 		def on_success(self, retval, task_id, args, kwargs):
-			urllib.urlopen(DRUPAL_CALLBACK_URL + str(kwargs['nodeID']) + "/0")
-	
+			task_on_success(kwargs)
+		
 		def on_failure(self, exc, task_id, args, kwargs, einfo):
-			
-			logger = create_logger(kwargs['logFilepath'])
-			
-			errorType = type(exc).__name__
-			
-			if errorType == "TaskError":
-				logger("%s: %s" % (errorType, str(exc)))
-			else:
-				logger("Internal error occurred. Please try again later.")
-			
-			urllib.urlopen(DRUPAL_CALLBACK_URL + str(kwargs['nodeID']) + "/1")
+			task_on_error(exc, kwargs)
+
+
+def validate_options_handler(validator, options):
+	try:
+		validator(options)
+	except TaskError as exc:
+		task_on_error(exc, options.__dict__)
+		raise
 
 # Hack so that scripts can continue pretending they have an OptionParser object
 # http://stackoverflow.com/questions/1305532/convert-python-dict-to-object
@@ -81,7 +96,7 @@ def FastaIterator(handle, alphabet = single_letter_alphabet, title2ids = fasta_t
 			descr = line[1:].rstrip()
 			id   = descr.split()[0]
 			name = id
-
+		
 		lines = []
 		line = handle.readline()
 		while line and line[0] != ">":
@@ -90,7 +105,7 @@ def FastaIterator(handle, alphabet = single_letter_alphabet, title2ids = fasta_t
 		#when not opened in universal read lines mode)
 			lines.append(line.rstrip().replace(" ","").replace("\r",""))
 			line = handle.readline()
-
+		
 		#Return the record and then continue...
 		yield SeqRecord(Seq(string.join(lines, ''), alphabet), id = id, name = name, description = descr)
 
@@ -129,7 +144,7 @@ def check_fasta_pasta(seq_file):
 class OptParser(OptionParser):
 	def error(self, msg):
 		"""error(msg : string)
-	
+		
 		Print a usage message incorporating 'msg' to stderr and exit.
 		If you override this in a subclass, it should not return -- it
 		should either exit or raise an exception.

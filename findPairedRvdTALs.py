@@ -2,7 +2,7 @@ from paired_talesf import ScorePairedTalesfTask
 
 from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 
-from talutil import OptParser, create_logger, OptionObject, TaskError
+from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError
 
 celery_found = True
 try:
@@ -19,11 +19,7 @@ if celery_found:
 	def PairedTalesfTask(*args, **kwargs):
 		RunPairedTalesfTask(OptionObject(**kwargs))
 
-def RunPairedTalesfTask(options):
-	
-	logger = create_logger(options.logFilepath)
-	
-	logger("Beginning")
+def validateOptions(options):
 	
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
@@ -31,20 +27,23 @@ def RunPairedTalesfTask(options):
 	if options.cutoff not in [3, 3.5, 4]:
 		raise TaskError("Invalid cutoff value provided")
 	
-	rvdString = options.rvdString.strip().upper()
-	rvdString2 = options.rvdString2.strip().upper()
-	
 	RVD_re = re.compile(RVD_SEQ_REGEX, re.IGNORECASE | re.MULTILINE)
 	
-	if not RVD_re.match(rvdString):
+	if not RVD_re.match(options.rvdString):
 		raise TaskError("RVD sequence is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
-		
-	if not RVD_re.match(rvdString2):
+	
+	if not RVD_re.match(options.rvdString2):
 		raise TaskError("RVD sequence 2 is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
 	
 	if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 		raise TaskError("Invalid organism specified.")
-		
+
+def RunPairedTalesfTask(options):
+	
+	logger = create_logger(options.logFilepath)
+	
+	logger("Beginning")
+	
 	if options.genome:
 		seqFilename = GENOME_FILE % options.organism
 	elif options.promoterome:
@@ -52,7 +51,7 @@ def RunPairedTalesfTask(options):
 	else:
 		seqFilename = options.fasta
 	
-	result = ScorePairedTalesfTask(seqFilename, rvdString, rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.cutoff, options.min, options.max, 2, options.organism if options.genome else "")
+	result = ScorePairedTalesfTask(seqFilename, options.rvdString, options.rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.cutoff, options.min, options.max, 2, options.organism if options.genome else "")
 	
 	if(result == 1):
 		raise TaskError()
@@ -80,6 +79,11 @@ if __name__ == '__main__':
 	parser.add_option('-x', '--max', dest='max', type='int', default=None, help='the maximum spacer size to try')
 	(options, args) = parser.parse_args()
 	
+	options.rvdString = options.rvdString.strip().upper()
+	options.rvdString2 = options.rvdString2.strip().upper()
+	
+	validate_options_handler(validateOptions, options)
+	
 	if options.genome:
 		queue_name = 'talesf_genome'
 	elif options.promoterome:
@@ -91,7 +95,7 @@ if __name__ == '__main__':
 		
 		if not celery_found:
 			raise TaskError("nodeID option was provided but Celery is not installed")
-			
+		
 		logger = create_logger(options.logFilepath)
 		logger("Your task has been queued and will be processed when a worker node becomes available")
 		

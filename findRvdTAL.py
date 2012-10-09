@@ -2,7 +2,7 @@ from talesf import ScoreTalesfTask
 
 from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 
-from talutil import OptParser, create_logger, OptionObject, TaskError
+from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError
 
 celery_found = True
 try:
@@ -19,11 +19,7 @@ if celery_found:
 	def TalesfTask(*args, **kwargs):
 		RunTalesfTask(OptionObject(**kwargs))
 
-def RunTalesfTask(options):
-	
-	logger = create_logger(options.logFilepath)
-	
-	logger("Beginning")
+def validateOptions(options):
 	
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
@@ -31,19 +27,25 @@ def RunTalesfTask(options):
 	if options.cutoff not in [3, 3.5, 4]:
 		raise TaskError("Invalid cutoff value provided")
 	
-	if options.revcomp:
-		forwardOnly = False
-	else:
-		forwardOnly = True
-	
-	rvdString = options.rvdString.strip().upper()
-	
 	RVD_re = re.compile(RVD_SEQ_REGEX, re.IGNORECASE | re.MULTILINE)
-	if not RVD_re.match(rvdString):
+	
+	if not RVD_re.match(options.rvdString):
 		raise TaskError("RVD sequence is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
 	
 	if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 		raise TaskError("Invalid organism specified.")
+	
+
+def RunTalesfTask(options):
+	
+	logger = create_logger(options.logFilepath)
+	
+	logger("Beginning")
+	
+	if options.revcomp:
+		forwardOnly = False
+	else:
+		forwardOnly = True
 	
 	if options.genome:
 		seqFilename = GENOME_FILE % options.organism
@@ -52,7 +54,7 @@ def RunTalesfTask(options):
 	else:
 		seqFilename = options.fasta
 	
-	result = ScoreTalesfTask(seqFilename, rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 2, options.organism if options.genome else "")
+	result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 2, options.organism if options.genome else "")
 	
 	if(result == 1):
 		raise TaskError()
@@ -78,6 +80,10 @@ if __name__ == '__main__':
 	parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
 	(options, args) = parser.parse_args()
 	
+	options.rvdString = options.rvdString.strip().upper()
+	
+	validate_options_handler(validateOptions, options)
+	
 	if options.genome:
 		queue_name = 'talesf_genome'
 	elif options.promoterome:
@@ -89,7 +95,7 @@ if __name__ == '__main__':
 		
 		if not celery_found:
 			raise TaskError("nodeID option was provided but Celery is not installed")
-			
+		
 		logger = create_logger(options.logFilepath)
 		logger("Your task has been queued and will be processed when a worker node becomes available")
 		

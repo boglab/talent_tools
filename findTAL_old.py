@@ -49,7 +49,7 @@ from Bio.Alphabet import generic_dna
 from Bio import SeqUtils
 
 from talconfig import BASE_DIR
-from talutil import OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError
+from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError
 
 celery_found = True
 try:
@@ -108,11 +108,11 @@ if celery_found:
 	def FindTALOldTask(*args, **kwargs):
 		RunFindTALOldTask(OptionObject(**kwargs))
 
-def RunFindTALOldTask(options):
+def validateOptions(options):
 	
 	if options.fasta == 'NA':
 		raise TaskError("FASTA file required.")
-		
+	
 	if options.cupstream not in [0, 1, 2]:
 		raise TaskError("Invalid cupstream value provided")
 	
@@ -134,12 +134,14 @@ def RunFindTALOldTask(options):
 	if options.max < options.min:
 		raise TaskError("Maximum spacer length cannot be less than the minimum spacer length")
 	
+	with open(options.fasta, 'r') as seq_file:
+		check_fasta_pasta(seq_file)
+
+def RunFindTALOldTask(options):
+	
 	logger = create_logger(options.logFilepath)
 	
 	seq_file = open(options.fasta, 'r')
-	
-	#Prescreen for FASTA pasta
-	check_fasta_pasta(seq_file)
 	
 	logger("Beginning")
 	
@@ -409,7 +411,8 @@ if __name__ == '__main__':
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
 	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Optional node id if this script was called from Drupal.')
 	(options, args) = parser.parse_args()
-
+	
+	validate_options_handler(validateOptions, options)
 	
 	if options.nodeID != -1:
 		
