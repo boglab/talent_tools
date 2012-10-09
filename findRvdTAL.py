@@ -2,7 +2,7 @@ from talesf import ScoreTalesfTask
 
 from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 
-from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError
+from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError, check_fasta_pasta
 
 celery_found = True
 try:
@@ -35,6 +35,9 @@ def validateOptions(options):
 	if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 		raise TaskError("Invalid organism specified.")
 	
+	if not options.genome and not options.promoterome:
+		with open(options.fasta, 'r') as seq_file:
+			check_fasta_pasta(seq_file)
 
 def RunTalesfTask(options):
 	
