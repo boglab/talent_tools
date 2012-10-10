@@ -168,13 +168,10 @@ def validateOptions(options):
 		
 		if options.check_offtargets:
 			
-			genes = [gene for gene in FastaIterator(seq_file, alphabet=generic_dna)]
-			
-			if len(genes) > 1:
-				raise TaskError("Off-target counting is only available for sequences that have 1000 or less bases")
-			
-			if len(gene.seq) > 1000:
-				raise TaskError("Off-target counting is only available for sequences that have 1000 or less bases")
+			for gene in FastaIterator(seq_file, alphabet=generic_dna):
+				
+				if len(gene.seq) > 1000:
+					raise TaskError("Off-target counting is only available for sequences that have 1000 or less bases")
 
 def RunFindTALTask(options):
 	
