@@ -1,14 +1,8 @@
 from datetime import timedelta
 
 BROKER_BACKEND = "redis"
-BROKER_HOST = "127.0.0.1"
-BROKER_PORT = 6379
-BROKER_VHOST = "0"
 BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis"
-CELERY_REDIS_HOST = "localhost"
-CELERY_REDIS_PORT = 6379
-CELERY_REDIS_DB = 0
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
 
 CELERY_TRACK_STARTED = True
 CELERY_TASK_SERIALIZER = "json"
