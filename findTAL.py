@@ -51,7 +51,7 @@ class BindingSite:
 		
 		self.upstream = kwargs.pop("upstream", "")
 		
-		self.offtarget_counts = kwargs.pop("offtarget_counts", [])
+		self.offtarget_counts = kwargs.pop("offtarget_counts", [0, 0, 0, 0, 0])
 		
 		self.re_sites = ""
 
@@ -414,17 +414,19 @@ def RunFindTALTask(options):
 				else:
 					binding_sites.extend(cut_site_potential_sites)
 	
-	off_target_pairs = []
-	
 	if options.check_offtargets:
 		
-		for i, binding_site in enumerate(binding_sites):
-			off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
-		
-		off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
-		
-		for i, binding_site in enumerate(binding_sites):
-			binding_site.offtarget_counts = off_target_counts[i]
+		if len(binding_sites) > 0:
+			
+			off_target_pairs = []
+			
+			for i, binding_site in enumerate(binding_sites):
+				off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
+			
+			off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+			
+			for i, binding_site in enumerate(binding_sites):
+				binding_site.offtarget_counts = off_target_counts[i]
 	
 	for i, binding_site in enumerate(binding_sites):
 		
