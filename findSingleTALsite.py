@@ -288,10 +288,11 @@ def RunFindSingleTALSiteTask(options):
 	  filename = options.outpath
 	
 	out = open(filename, 'w')
-	table_ignores = ["TAL length"]
+	table_ignores = []
 	if not options.revcomp:
 		table_ignores.append("Plus strand sequence")
-	out.write("table_ignores:" + string.join(table_ignores, ",") + "\n")
+	if len(table_ignores) > 0:
+		out.write("table_ignores:" + string.join(table_ignores, ",") + "\n")
 	
 	u_bases = []
 	
