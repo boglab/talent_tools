@@ -64,8 +64,6 @@ DNA_dict = {'A':0, 'C':1, 'G':2, 'T':3}
 avg_percents = {'A':0.31, 'C':0.37, 'G':0.09, 'T':0.22}
 stdev = {'A':0.16, 'C':0.13, 'G':0.08, 'T':0.10}
 
-strong_binding_RVDs = {'A':'NI', 'C':'HD', 'G':'NN', 'T':'NG'}
-
 with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
 	NEB_RE_sites = pickle.load(re_dict_file)
 
@@ -192,7 +190,17 @@ def RunFindTALTask(options):
 			offtarget_seq_filename = PROMOTEROME_FILE % options.organism
 		else:
 			offtarget_seq_filename = options.fasta
-
+	
+	strong_binding_RVDs = {
+		'A':'NI',
+		'C':'HD',
+		'G':'NN',
+		'T':'NG'
+	}
+	
+	if options.gspec:
+		strong_binding_RVDs['G'] = 'NH'
+	
 	seq_file = open(options.fasta, 'r')
 	
 	if options.outpath == 'NA':
@@ -468,20 +476,12 @@ if __name__ == '__main__':
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
 	parser.add_option('-i', '--filter', dest='filter', type='int', default = 0, help='0 for smallest at each cut site, 1 for each everything targetting a specific site, 2 for unfiltered')
 	parser.add_option('-b', '--filterbase', dest='filterbase', type='int', default = -1, help='if filter is 1 this gives the cutpos')
+	parser.add_option('-g', '--gspec', dest='gspec', action='store_true', default = False, help='If true, use NH instead of NN for G')
 	# Offtarget Options
 	parser.add_option('-e', '--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
 	parser.add_option('-v', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
 	parser.add_option('-w', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
 	parser.add_option('-s', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
-	#Legacy
-	parser.add_option('-j', '--job', dest='job', type='string', default='output', help='the job name, output files will have the job name as a prefix.')
-	parser.add_option('-d', '--outdir', dest='outdir', type='string', default = 'upload/', help='Directory in which to place output files.')
-	parser.add_option('-o', '--outfile', dest='outfile', type='string', default = '_TALEN_pairs_all.txt', help='Optional filename for output file.')
-	parser.add_option('-t', '--t1', dest='t1', action='store_false', default = True, help='Do not enforce rule "No T at position 1."')
-	parser.add_option('-a', '--a2', dest='a2', action='store_false', default = True, help='Do not enforce rule "No A at position 1."')
-	parser.add_option('-n', '--tn', dest='tn', action='store_false', default = True, help='Do not enforce rule "Sites must end in a T."')
-	parser.add_option('-g', '--gn', dest='gn', action='store_false', default = True, help='Do not enforce rule "Sites may not end in G/NN."')
-	parser.add_option('-c', '--comp', dest='comp', action='store_false', default = True, help='Do not enforce base composition rules.')
 	#Drupal options
 	parser.add_option('-p', '--outpath', dest='outpath', type='string', default = 'NA', help='Optional full path for output file; if set --job, --outdir and --outfile are ignored.')
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
