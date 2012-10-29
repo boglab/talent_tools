@@ -351,6 +351,7 @@ if __name__ == '__main__':
 	parser.add_option('-p', '--outpath', dest='outpath', type='string', default = 'NA', help='Optional full path for output file; if set --job, --outdir and --outfile are ignored.')
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
 	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Optional node id if this script was called from Drupal.')
+	parser.add_option('-k', '--ipaddr', dest='ip_address', type='string', default = '', help='IP address of job submitter')
 	(options, args) = parser.parse_args()
 	
 	validate_options_handler(validateOptions, options)

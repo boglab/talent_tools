@@ -81,6 +81,7 @@ if __name__ == '__main__':
 	parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
 	parser.add_option('-c', '--revcomp', dest='revcomp', action = 'store_true', default = False, help='Search the reverse complement of the input FASTA sequences')
 	parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
+	parser.add_option('-k', '--ipaddr', dest='ip_address', type='string', default = '', help='IP address of job submitter')
 	(options, args) = parser.parse_args()
 	
 	options.rvdString = options.rvdString.strip().upper()

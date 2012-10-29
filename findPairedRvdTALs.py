@@ -81,6 +81,7 @@ if __name__ == '__main__':
 	parser.add_option('-s', '--rvds2', dest='rvdString2', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
 	parser.add_option('-m', '--min', dest='min', type='int', default=None, help='the minimum spacer size to try')
 	parser.add_option('-x', '--max', dest='max', type='int', default=None, help='the maximum spacer size to try')
+	parser.add_option('-k', '--ipaddr', dest='ip_address', type='string', default = '', help='IP address of job submitter')
 	(options, args) = parser.parse_args()
 	
 	options.rvdString = options.rvdString.strip().upper()
