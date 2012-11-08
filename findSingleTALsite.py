@@ -104,6 +104,16 @@ def RunFindSingleTALSiteTask(options):
 
 	logger = create_logger(options.logFilepath)
 	
+	strong_binding_RVDs = {
+		'A':'NI',
+		'C':'HD',
+		'G':'NN',
+		'T':'NG'
+	}
+	
+	if options.gspec:
+		strong_binding_RVDs['G'] = 'NH'
+	
 	seq_file = open(options.fasta, 'r')
 
 	#Set other parameters
@@ -258,7 +268,6 @@ def RunFindSingleTALSiteTask(options):
 	
 	#Compute TALs for each gene, using "strong-binding" RVDs for each nucleotide (binds the nucleotide more than half the time and we have more than 10 observations)
 	logger('Designing best scoring perfect TALs for each potential site...')
-	strong_binding_RVDs = {'A':'NI', 'C':'HD', 'G':'NN', 'T':'NG'}
 	
 	for gene in gene_binding_sites.keys():
 		for start in gene_binding_sites[gene].keys():
@@ -347,6 +356,7 @@ if __name__ == '__main__':
 	parser.add_option('-b', '--arraymin', dest='arraymin', type='int', default=None, help='the minimum repeat array length to try')
 	parser.add_option('-y', '--arraymax', dest='arraymax', type='int', default=None, help='the maximum repeat array length to try')
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
+	parser.add_option('-s', '--gspec', dest='gspec', action='store_true', default = False, help='If true, use NH instead of NN for G')
 	#Drupal options
 	parser.add_option('-p', '--outpath', dest='outpath', type='string', default = 'NA', help='Optional full path for output file; if set --job, --outdir and --outfile are ignored.')
 	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
