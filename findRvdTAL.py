@@ -57,7 +57,7 @@ def RunTalesfTask(options):
 	else:
 		seqFilename = options.fasta
 	
-	result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 2, options.organism if options.genome else "")
+	result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 4, options.organism if options.genome else "")
 	
 	if(result == 1):
 		raise TaskError()
