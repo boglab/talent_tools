@@ -72,7 +72,7 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
         
         remote_file = urllib2.urlopen(sequence_url)
         
-        gzipped_filepath = PROMOTEROME_FILE + "/gzip/" + sequence_name + '.fasta.gz'
+        gzipped_filepath = PROMOTEROME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
         
         #gzip requires the entire file to be present in order to decompress
         with open(gzipped_filepath, 'wb') as gzip_file:
