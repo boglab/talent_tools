@@ -6,12 +6,14 @@ import sys
 import gzip
 import os
 import urllib2
+import pickle
+import subprocess
 
 sys.path.append('/opt/boglab')
 
 from talent.talconfig import BASE_DIR, GENOME_DIR, GENOME_FILE, PROMOTEROME_DIR, PROMOTEROME_FILE
 
-version_dump_filepath = BASE_DIR + "/utils/sequence_versions_dump"
+version_dump_filepath = BASE_DIR + "/talent/utils/sequence_versions_dump"
 
 with open(version_dump_filepath, "rb") as versions_file:
     sequence_versions = pickle.load(versions_file)
@@ -28,27 +30,35 @@ genome_urls = {
     "arabidopsis_thaliana": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.{0}.dna.toplevel.fa.gz",
 }
 
+print("Downloading genomes")
+
 for sequence_name, sequence_url in genome_urls.iteritems():
-    
+
+    print(sequence_name)
+
     try:
         
         remote_file = urllib2.urlopen(sequence_url.format(sequence_versions["genomes"][sequence_name] + 1))
-        
         gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
         
         #gzip requires the entire file to be present in order to decompress
         with open(gzipped_filepath, 'wb') as gzip_file:
             gzip_file.writelines(remote_file)
         
-        #the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
-        ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
+        #use subprocess instead of GzipFile + writelines because writelines from gzipped file is slow on 2.6
+        subprocess.check_output("gunzip -c %s > %s" % (gzipped_filepath, (GENOME_FILE % sequence_name)), shell=True)
         
-        try:
-            with open(GENOME_FILE % sequence_name, 'wb') as fasta_file:
-                fasta_file.writelines(ungzipped_file)
-                sequence_versions["genomes"][sequence_name] += 1
-        finally:
-            ungzipped_file.close()
+        sequence_versions["genomes"][sequence_name] += 1
+        
+        ##the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
+        #ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
+        #
+        #try:
+        #    with open(GENOME_FILE % sequence_name, 'wb') as fasta_file:
+        #        fasta_file.writelines(ungzipped_file)
+        #        sequence_versions["genomes"][sequence_name] += 1
+        #finally:
+        #    ungzipped_file.close()
         
     except urllib2.URLError:
         pass
@@ -57,6 +67,8 @@ with open(version_dump_filepath, "wb") as versions_file:
     pickle.dump(sequence_versions, versions_file)
 
 #promoterome sequences
+
+print("Downloading promoteromes")
 
 promoterome_urls = {
     "homo_sapiens": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/upstream1000.fa.gz",
@@ -68,6 +80,8 @@ promoterome_urls = {
 
 for sequence_name, sequence_url in promoterome_urls.iteritems():
     
+    print(sequence_name)
+    
     try:
         
         remote_file = urllib2.urlopen(sequence_url)
@@ -78,14 +92,17 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
         with open(gzipped_filepath, 'wb') as gzip_file:
             gzip_file.writelines(remote_file)
         
-        #the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
-        ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
+        #use subprocess instead of GzipFile + writelines because writelines from gzipped file is slow on 2.6
+        subprocess.check_output("gunzip -c %s > %s" % (gzipped_filepath, (PROMOTEROME_FILE % sequence_name)), shell=True)
         
-        try:
-            with open(PROMOTEROME_FILE % sequence_name, 'wb') as fasta_file:
-                fasta_file.writelines(ungzipped_file)
-        finally:
-            ungzipped_file.close()
+        #the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
+        #ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
+        #
+        #try:
+        #    with open(PROMOTEROME_FILE % sequence_name, 'wb') as fasta_file:
+        #        fasta_file.writelines(ungzipped_file)
+        #finally:
+        #    ungzipped_file.close()
         
     except urllib2.URLError:
         pass
