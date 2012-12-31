@@ -70,10 +70,6 @@ if __name__ == '__main__':
 	parser.add_option('-y', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
 	parser.add_option('-w', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
 	parser.add_option('-o', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
-	# output options
-	parser.add_option('-p', '--outpath', dest='outputFilepath', type='string', default = 'NA', help='Template file path for output file')
-	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
-	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Drupal node ID')
 	# program options
 	parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
 	parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
@@ -81,7 +77,12 @@ if __name__ == '__main__':
 	parser.add_option('-s', '--rvds2', dest='rvdString2', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
 	parser.add_option('-m', '--min', dest='min', type='int', default=None, help='the minimum spacer size to try')
 	parser.add_option('-x', '--max', dest='max', type='int', default=None, help='the maximum spacer size to try')
+	#Drupal options
+	parser.add_option('-p', '--outpath', dest='outputFilepath', type='string', default = 'NA', help='Template file path for output file')
+	parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
+	parser.add_option('-z', '--nodeid', dest='nodeID', type='int', default = '-1', help='Drupal node ID')
 	parser.add_option('-k', '--ipaddr', dest='ip_address', type='string', default = '', help='IP address of job submitter')
+	
 	(options, args) = parser.parse_args()
 	
 	options.rvdString = options.rvdString.strip().upper()

@@ -27,11 +27,7 @@
 #Each half site has ACGT % composition within 2 standard deviations of the mean
 #for known binding sites
 
-# Import needed BioPython modules
-from Bio import SeqIO
-from Bio import Seq
 from Bio.Alphabet import generic_dna
-from Bio import SeqUtils
 
 from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError
 

@@ -42,11 +42,7 @@
 #reflect the reality that longer TALs can be quickly assembled with the
 #GoldenGate technique.
 
-# Import needed BioPython modules
-from Bio import SeqIO
-from Bio import Seq
 from Bio.Alphabet import generic_dna
-from Bio import SeqUtils
 
 from talconfig import BASE_DIR
 from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError

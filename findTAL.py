@@ -1,10 +1,6 @@
 #!/usr/bin/python
 
-# Import needed BioPython modules
-from Bio import SeqIO
-from Bio import Seq
 from Bio.Alphabet import generic_dna
-from Bio import SeqUtils
 
 from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
 from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
@@ -54,15 +50,6 @@ class BindingSite:
 		self.offtarget_counts = kwargs.pop("offtarget_counts", [0, 0, 0, 0, 0])
 		
 		self.re_sites = ""
-
-#DNA list and dictionary
-DNA = ['A', 'C', 'G', 'T']
-DNA_dict = {'A':0, 'C':1, 'G':2, 'T':3}
-
-
-#Average percent composition of known TAL binding sites
-avg_percents = {'A':0.31, 'C':0.37, 'G':0.09, 'T':0.22}
-stdev = {'A':0.16, 'C':0.13, 'G':0.08, 'T':0.10}
 
 with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
 	NEB_RE_sites = pickle.load(re_dict_file)
@@ -501,7 +488,7 @@ if __name__ == '__main__':
 		logger = create_logger(options.logFilepath)
 		logger("Your task has been queued and will be processed when a worker node becomes available")
 		
-		# This is ensures that the task is queued with the same module name
+		# This ensures that the task is queued with the same module name
 		# that the Celery workers are expecting 
 		from findTAL import FindTALTask
 		
