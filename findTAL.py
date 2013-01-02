@@ -16,6 +16,7 @@ except ImportError:
 import re
 import math
 import pickle
+import os
 
 tfcount_found = True
 try:
@@ -144,6 +145,14 @@ def validateOptions(options):
 		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 			raise TaskError("Invalid organism specified.")
 		
+		if options.offtargets_fasta != "NA":
+				
+			if options.genome or options.promoterome:
+				raise TaskError("--genome and --promoterome options cannot be combined with --offtargets-fasta")
+			
+			if (not os.path.exists(options.offtargets_fasta) or os.path.getsize(options.offtargets_fasta) <= 2):
+				raise TaskError("Off-target FASTA file must exist and be non-empty.")
+		
 		if options.filter == 2:
 			raise TaskError("Off-target counting is not allowed for unfiltered queries.")
 	
@@ -171,7 +180,9 @@ def RunFindTALTask(options):
 		
 		offtarget_seq_filename = ""
 		
-		if options.genome:
+		if options.offtargets_fasta != "NA":
+				offtarget_seq_filename = offtargets_fasta
+		elif options.genome:
 			offtarget_seq_filename = GENOME_FILE % options.organism
 		elif options.promoterome:
 			offtarget_seq_filename = PROMOTEROME_FILE % options.organism
@@ -466,6 +477,7 @@ if __name__ == '__main__':
 	parser.add_option('--gspec', dest='gspec', action='store_true', default = False, help='If true, use NH instead of NN for G')
 	# Offtarget Options
 	parser.add_option('--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
+	parser.add_option('--offtargets-fasta', dest='offtargets_fasta', type='string', default='NA', help='FASTA file containing to search for off-targets')
 	parser.add_option('--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
 	parser.add_option('--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
 	parser.add_option('--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
