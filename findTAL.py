@@ -183,7 +183,7 @@ def RunFindTALTask(options):
 		offtarget_seq_filename = ""
 		
 		if options.offtargets_fasta != "NA":
-				offtarget_seq_filename = offtargets_fasta
+				offtarget_seq_filename = options.offtargets_fasta
 		elif options.genome:
 			offtarget_seq_filename = GENOME_FILE % options.organism
 		elif options.promoterome:
