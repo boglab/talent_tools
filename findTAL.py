@@ -139,19 +139,21 @@ def validateOptions(options):
 	
 	if options.max < options.min:
 		raise TaskError("Maximum spacer length cannot be less than the minimum spacer length")
+
+	if options.offtargets_fasta != "NA":
+		
+		if options.genome or options.promoterome:
+			raise TaskError("--genome and --promoterome options cannot be combined with --offtargets-fasta")
+		
+		if (not os.path.exists(options.offtargets_fasta) or os.path.getsize(options.offtargets_fasta) <= 2):
+			raise TaskError("Off-target FASTA file must exist and be non-empty.")
+		
+		options.check_offtargets = True
 	
 	if options.check_offtargets:
 		
 		if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
 			raise TaskError("Invalid organism specified.")
-		
-		if options.offtargets_fasta != "NA":
-				
-			if options.genome or options.promoterome:
-				raise TaskError("--genome and --promoterome options cannot be combined with --offtargets-fasta")
-			
-			if (not os.path.exists(options.offtargets_fasta) or os.path.getsize(options.offtargets_fasta) <= 2):
-				raise TaskError("Off-target FASTA file must exist and be non-empty.")
 		
 		if options.filter == 2:
 			raise TaskError("Off-target counting is not allowed for unfiltered queries.")
