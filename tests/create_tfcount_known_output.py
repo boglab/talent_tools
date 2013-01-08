@@ -12,6 +12,8 @@ import pickle
 organisms = ["arabidopsis_thaliana", "drosophila_melanogaster", "oryza_sativa"]
 
 cutoff_values = [3.0, 3.5, 4.0]
+
+rvd_pair_sets = [
     [
         ["HD HD NG HD HD NI HD HD HD NI NI HD NN NN NG NN NG HD NG", "HD HD NI NN NN NI HD NG NN NG NG NG NN HD NG NG"], 
         ["HD HD NG HD HD NI NG NN NG NG NN NI NI HD NI NG", "HD NN NG NG HD NI NI NI NI HD NN HD NG NN NI NG"], 
