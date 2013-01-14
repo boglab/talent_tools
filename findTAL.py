@@ -319,9 +319,9 @@ def RunFindTALTask(options):
                     
                     break_out = False
                     
-                    for u_pos in (reversed(u_positions) if options.check_offtargets else u_positions):
+                    for u_pos in reversed(u_positions):
                         
-                        for d_pos in (reversed(d_positions) if options.check_offtargets else d_positions):
+                        for d_pos in reversed(d_positions):
                         
                             #uses inclusive start, exclusive end
                             tal1_start = u_pos + 1
