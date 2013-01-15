@@ -17,6 +17,7 @@ import re
 import math
 import pickle
 import os
+from itertools import ifilterfalse
 
 tfcount_found = True
 try:
@@ -54,6 +55,8 @@ class BindingSite:
 
 with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
     NEB_RE_sites = pickle.load(re_dict_file)
+
+streubel_at_streak_re = re.compile('[AT]{5,}')
 
 if celery_found:
     @task(base=BaseTask)
@@ -110,6 +113,24 @@ def filterByOfftargetCount(x, y):
         return y if len(y.spacer_seq) < len(x.spacer_seq) else x
     else:
         return y if y_average_tal_len > x_average_tal_len else x
+
+def filterStreubel(binding_site):
+    
+    seq2 = reverseComplement(binding_site.seq2_seq)
+    
+    if float(binding_site.seq1_seq.count('C') + binding_site.seq1_seq.count('G')) / len(binding_site.seq1_seq) < 0.25:
+        return True
+    
+    if len(streubel_at_streak_re.findall(binding_site.seq1_seq)) > 0:
+        return True
+    
+    if float(seq2.count('C') + seq2.count('G')) / len(seq2) < 0.25:
+        return True
+    
+    if len(streubel_at_streak_re.findall(seq2)) > 0:
+        return True
+    
+    return False
 
 def validateOptions(options):
     
@@ -425,6 +446,10 @@ def RunFindTALTask(options):
                 else:
                     binding_sites.extend(cut_site_potential_sites)
     
+    
+    if options.streubel:
+        binding_sites[:] = list(ifilterfalse(filterStreubel, binding_sites))
+    
     if options.check_offtargets:
         
         if len(binding_sites) > 0:
@@ -480,6 +505,7 @@ if __name__ == '__main__':
     parser.add_option('--filter', dest='filter', type='int', default = 0, help='0 for smallest at each cut site, 1 for each everything targetting a specific site, 2 for unfiltered')
     parser.add_option('--filterbase', dest='filterbase', type='int', default = -1, help='if filter is 1 this gives the cutpos')
     parser.add_option('--gspec', dest='gspec', action='store_true', default = False, help='If true, use NH instead of NN for G')
+    parser.add_option('--streubel', dest='streubel', action='store_true', default = False, help='If true, filter out TALENs that don\'t mean Streubel et. al. design guidelines')
     # Offtarget Options
     parser.add_option('--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
     parser.add_option('--offtargets-fasta', dest='offtargets_fasta', type='string', default='NA', help='FASTA file containing to search for off-targets')
