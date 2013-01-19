@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import with_statement
-
 import sys
 import gzip
 import os
@@ -38,27 +36,18 @@ for sequence_name, sequence_url in genome_urls.iteritems():
 
     try:
         
-        remote_file = urllib2.urlopen(sequence_url.format(sequence_versions["genomes"][sequence_name] + 1))
+        remote_file_path = sequence_url.format(sequence_versions["genomes"][sequence_name] + 1)
+        
+        #Check if the file exists
+        remote_file = urllib2.urlopen(remote_file_path)
+        remote_file.close()
+        
         gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
         
-        #gzip requires the entire file to be present in order to decompress
-        with open(gzipped_filepath, 'wb') as gzip_file:
-            gzip_file.writelines(remote_file)
-        
-        #use subprocess instead of GzipFile + writelines because writelines from gzipped file is slow on 2.6
-        subprocess.check_output("gunzip -c %s > %s" % (gzipped_filepath, (GENOME_FILE % sequence_name)), shell=True)
+        subprocess.check_call("wget -O %s %s" % (gzipped_filepath, remote_file_path), shell=True)
+        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (GENOME_FILE % sequence_name)), shell=True)
         
         sequence_versions["genomes"][sequence_name] += 1
-        
-        ##the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
-        #ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
-        #
-        #try:
-        #    with open(GENOME_FILE % sequence_name, 'wb') as fasta_file:
-        #        fasta_file.writelines(ungzipped_file)
-        #        sequence_versions["genomes"][sequence_name] += 1
-        #finally:
-        #    ungzipped_file.close()
         
     except urllib2.URLError:
         pass
@@ -84,25 +73,15 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
     
     try:
         
+        #Check if the file exists
         remote_file = urllib2.urlopen(sequence_url)
+        remote_file.close()
         
         gzipped_filepath = PROMOTEROME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
         
-        #gzip requires the entire file to be present in order to decompress
-        with open(gzipped_filepath, 'wb') as gzip_file:
-            gzip_file.writelines(remote_file)
-        
-        #use subprocess instead of GzipFile + writelines because writelines from gzipped file is slow on 2.6
-        subprocess.check_output("gunzip -c %s > %s" % (gzipped_filepath, (PROMOTEROME_FILE % sequence_name)), shell=True)
-        
-        #the gzipped file uses 'try' / 'finally' because in python 2.6 gzip files don't have 'with' support
-        #ungzipped_file = gzip.GzipFile(gzipped_filepath, 'rb')
-        #
-        #try:
-        #    with open(PROMOTEROME_FILE % sequence_name, 'wb') as fasta_file:
-        #        fasta_file.writelines(ungzipped_file)
-        #finally:
-        #    ungzipped_file.close()
+        subprocess.check_call("wget -O %s %s" % (gzipped_filepath, sequence_url), shell=True)
+        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (PROMOTEROME_FILE % sequence_name)), shell=True)
         
     except urllib2.URLError:
         pass
+
