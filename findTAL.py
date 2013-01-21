@@ -103,15 +103,6 @@ def filterByTALSize(x, y):
     if x_average_tal_len == y_average_tal_len:
         return y if len(y.spacer_seq) < len(x.spacer_seq) else x
     else:
-        return y if y_average_tal_len < x_average_tal_len else x
-
-def filterByOfftargetCount(x, y):
-    x_average_tal_len = float(len(x.seq1_seq) + len(x.seq2_seq)) / 2
-    y_average_tal_len = float(len(y.seq1_seq) + len(y.seq2_seq)) / 2
-    
-    if x_average_tal_len == y_average_tal_len:
-        return y if len(y.spacer_seq) < len(x.spacer_seq) else x
-    else:
         return y if y_average_tal_len > x_average_tal_len else x
 
 def filterStreubel(binding_site):
@@ -346,7 +337,7 @@ def RunFindTALTask(options):
                     for u_pos in reversed(u_positions):
                         
                         for d_pos in reversed(d_positions):
-                        
+                            
                             #uses inclusive start, exclusive end
                             tal1_start = u_pos + 1
                             tal1_end = i - spacer_size_left
@@ -429,20 +420,14 @@ def RunFindTALTask(options):
                 
                 if len(spacer_potential_sites) > 0:
                     if options.filter == 0:
-                        if options.check_offtargets:
-                            cut_site_potential_sites.append(reduce(filterByOfftargetCount, spacer_potential_sites))
-                        else:
-                            cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
+                        cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
                     else:
                         cut_site_potential_sites.extend(spacer_potential_sites)
                 
             
             if len(cut_site_potential_sites) > 0:
                 if options.filter == 0:
-                    if options.check_offtargets:
-                        binding_sites.append(reduce(filterByOfftargetCount, cut_site_potential_sites))
-                    else:
-                        binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
+                    binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
                 else:
                     binding_sites.extend(cut_site_potential_sites)
     
