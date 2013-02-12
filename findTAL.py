@@ -49,6 +49,8 @@ class BindingSite:
         
         self.upstream = kwargs.pop("upstream", "")
         
+        self.cg_percent = kwargs.pop("cg_percent", 0)
+        
         self.offtarget_counts = kwargs.pop("offtarget_counts", [0, 0, 0, 0, 0])
         
         self.re_sites = ""
@@ -253,7 +255,7 @@ def RunFindTALTask(options):
     
     offtarget_header = "\tOff-Target Counts" if options.check_offtargets else ""
     
-    out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique_RE_sites_in_spacer' + offtarget_header + '\n')
+    out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique RE sites in spacer\t% RVDs HD or NN/NH' + offtarget_header + '\n')
     
     binding_sites = []
     
@@ -353,6 +355,8 @@ def RunFindTALTask(options):
                                 
                                 bad_site = False
                                 
+                                cg_count = 0
+                                
                                 tal1_rvd = []
                                 
                                 for c in tal1_seq:
@@ -361,8 +365,11 @@ def RunFindTALTask(options):
                                         bad_site = True
                                         break
                                     
-                                    tal1_rvd.append(strong_binding_RVDs[c])
+                                    if c == 'C' or c == 'G':
+                                        cg_count += 1
                                     
+                                    tal1_rvd.append(strong_binding_RVDs[c])
+                                
                                 if bad_site:
                                     continue
                                 
@@ -376,8 +383,11 @@ def RunFindTALTask(options):
                                         bad_site = True
                                         break
                                     
+                                    if c == 'C' or c == 'G':
+                                        cg_count += 1
+                                        
                                     tal2_rvd.append(strong_binding_RVDs[c])
-                                    
+                                
                                 if bad_site:
                                     continue
                                 
@@ -399,7 +409,8 @@ def RunFindTALTask(options):
                                                seq2_end = tal2_end,
                                                seq2_seq = tal2_seq,
                                                seq2_rvd = tal2_rvd,
-                                               upstream = u_base)
+                                               upstream = u_base,
+                                               cg_percent = round(float(cg_count) / (len(tal1_seq) + len(tal2_seq)), 2))
                                 
                                 findRESitesInSpacer(sequence, binding_site)
                                 
@@ -464,6 +475,7 @@ def RunFindTALTask(options):
             binding_site.seq2_rvd,
             binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
             binding_site.re_sites,
+            str(binding_site.cg_percent)
         ]
         
         if options.check_offtargets:
