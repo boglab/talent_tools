@@ -410,7 +410,7 @@ def RunFindTALTask(options):
                                                seq2_seq = tal2_seq,
                                                seq2_rvd = tal2_rvd,
                                                upstream = u_base,
-                                               cg_percent = round(float(cg_count) / (len(tal1_seq) + len(tal2_seq)), 2))
+                                               cg_percent = int(round(float(cg_count) / (len(tal1_seq) + len(tal2_seq)), 2) * 100))
                                 
                                 findRESitesInSpacer(sequence, binding_site)
                                 
