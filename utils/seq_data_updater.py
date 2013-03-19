@@ -28,6 +28,7 @@ genome_urls = {
     "oryza_sativa": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/oryza_sativa/dna/Oryza_sativa.MSU6.{0}.dna.toplevel.fa.gz",
     "arabidopsis_thaliana": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.{0}.dna.toplevel.fa.gz",
     "brachypodium_distachyon": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/brachypodium_distachyon/dna/Brachypodium_distachyon.v1.0.{0}.dna.toplevel.fa.gz",
+    "solanum_lycopersicum": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/solanum_lycopersicum/dna/Solanum_lycopersicum.SL2.40.{0}.dna.toplevel.fa.gz"
 }
 
 print("Downloading genomes")
