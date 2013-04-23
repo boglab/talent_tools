@@ -6,6 +6,7 @@ import os
 import urllib2
 import pickle
 import subprocess
+import warnings
 
 sys.path.append('/opt/boglab')
 
@@ -35,25 +36,53 @@ print("Downloading genomes")
 
 for sequence_name, sequence_url in genome_urls.iteritems():
 
-    print(sequence_name)
-
-    try:
+    print("GENOME: %s" % sequence_name)
+    
+    destination_file_path = GENOME_FILE % sequence_name
+    
+    if os.path.isfile(destination_file_path):
         
-        remote_file_path = sequence_url.format(sequence_versions["genomes"][sequence_name] + 1)
+        # Check for new version of existing
         
-        #Check if the file exists
-        remote_file = urllib2.urlopen(remote_file_path)
-        remote_file.close()
+        try:
+            
+            updated_remote_file_path = sequence_url.format(sequence_versions["genomes"][sequence_name] + 1)
+            
+            #Check if the file exists
+            remote_file = urllib2.urlopen(updated_remote_file_path)
+            remote_file.close()
+            
+            gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
+            
+            subprocess.check_call("wget -O %s %s" % (gzipped_filepath, updated_remote_file_path), shell=True)
+            subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
+            
+            sequence_versions["genomes"][sequence_name] += 1
+            
+        except urllib2.URLError:
+            
+            pass
         
-        gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
+    else:
         
-        subprocess.check_call("wget -O %s %s" % (gzipped_filepath, remote_file_path), shell=True)
-        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (GENOME_FILE % sequence_name)), shell=True)
+        # Download missing genome
         
-        sequence_versions["genomes"][sequence_name] += 1
-        
-    except urllib2.URLError:
-        pass
+        try:
+            
+            remote_file_path = sequence_url.format(sequence_versions["genomes"][sequence_name])
+            
+            #Check if the file exists
+            remote_file = urllib2.urlopen(remote_file_path)
+            remote_file.close()
+            
+            gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
+            
+            subprocess.check_call("wget -O %s %s" % (gzipped_filepath, updated_remote_file_path), shell=True)
+            subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
+            
+        except urllib2.URLError:
+            
+            warnings.warn("Unable to download %s genome, remote file does not exist" % sequence_name)
 
 with open(version_dump_filepath, "wb") as versions_file:
     pickle.dump(sequence_versions, versions_file)
@@ -73,7 +102,9 @@ promoterome_urls = {
 
 for sequence_name, sequence_url in promoterome_urls.iteritems():
     
-    print(sequence_name)
+    print("PROMOTEROME: %s" % sequence_name)
+    
+    destination_file_path = PROMOTEROME_FILE % sequence_name
     
     try:
         
@@ -84,8 +115,8 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
         gzipped_filepath = PROMOTEROME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
         
         subprocess.check_call("wget -O %s %s" % (gzipped_filepath, sequence_url), shell=True)
-        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (PROMOTEROME_FILE % sequence_name)), shell=True)
+        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
         
     except urllib2.URLError:
-        pass
-
+        
+        warnings.warn("Unable to download/update %s promoterome, remote file does not exist" % sequence_name)
