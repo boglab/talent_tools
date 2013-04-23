@@ -34,6 +34,8 @@ genome_urls = {
 
 print("Downloading genomes")
 
+subprocess.check_call("mkdir -p %s" % (GENOME_DIR + "/gzip"))
+
 for sequence_name, sequence_url in genome_urls.iteritems():
 
     print("GENOME: %s" % sequence_name)
@@ -90,6 +92,8 @@ with open(version_dump_filepath, "wb") as versions_file:
 #promoterome sequences
 
 print("Downloading promoteromes")
+
+subprocess.check_call("mkdir -p %s" % (PROMOTEROME_DIR + "/gzip"))
 
 promoterome_urls = {
     "homo_sapiens": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/upstream1000.fa.gz",
