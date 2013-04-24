@@ -34,7 +34,7 @@ genome_urls = {
 
 print("Downloading genomes")
 
-subprocess.check_call("mkdir -p %s" % (GENOME_DIR + "/gzip"))
+subprocess.check_call("mkdir -p %s" % (GENOME_DIR + "/gzip"), shell=True)
 
 for sequence_name, sequence_url in genome_urls.iteritems():
 
@@ -79,7 +79,7 @@ for sequence_name, sequence_url in genome_urls.iteritems():
             
             gzipped_filepath = GENOME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
             
-            subprocess.check_call("wget -O %s %s" % (gzipped_filepath, updated_remote_file_path), shell=True)
+            subprocess.check_call("wget -O %s %s" % (gzipped_filepath, remote_file_path), shell=True)
             subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
             
         except urllib2.URLError:
@@ -93,7 +93,7 @@ with open(version_dump_filepath, "wb") as versions_file:
 
 print("Downloading promoteromes")
 
-subprocess.check_call("mkdir -p %s" % (PROMOTEROME_DIR + "/gzip"))
+subprocess.check_call("mkdir -p %s" % (PROMOTEROME_DIR + "/gzip"), shell=True)
 
 promoterome_urls = {
     "homo_sapiens": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/upstream1000.fa.gz",
@@ -102,6 +102,9 @@ promoterome_urls = {
     "danio_rerio": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Danio_rerio/bigZips/upstream1000.fa.gz",
     "mus_musculus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Mus_musculus/bigZips/upstream1000.fa.gz",
     "rattus_norvegicus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Rattus_norvegicus/bigZips/upstream1000.fa.gz",
+    "oryza_sativa": "ftp://ftp.plantbiology.msu.edu/pub/data/Eukaryotic_Projects/o_sativa/annotation_dbs/pseudomolecules/version_6.0/all.dir/all.1kUpstream.gz",
+    "arabidopsis_thaliana": "ftp://ftp.arabidopsis.org/home/tair/Sequences/blast_datasets/TAIR10_blastsets/upstream_sequences/TAIR10_upstream_1000_translation_start_20101028",
+    "brachypodium_distachyon": "ftp://brachypodium.org/brachypodium.org/Annotation/Bdistachyon.MIPS_1_2.promoter.1000.fa.gz",
 }
 
 for sequence_name, sequence_url in promoterome_urls.iteritems():
@@ -116,10 +119,16 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
         remote_file = urllib2.urlopen(sequence_url)
         remote_file.close()
         
-        gzipped_filepath = PROMOTEROME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
-        
-        subprocess.check_call("wget -O %s %s" % (gzipped_filepath, sequence_url), shell=True)
-        subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
+        if sequence_url[-2:] == "gz":
+            
+            gzipped_filepath = PROMOTEROME_DIR + "/gzip/" + sequence_name + '.fasta.gz'
+            
+            subprocess.check_call("wget -O %s %s" % (gzipped_filepath, sequence_url), shell=True)
+            subprocess.check_call("gunzip -c %s > %s" % (gzipped_filepath, (destination_file_path)), shell=True)
+            
+        else:
+            
+            subprocess.check_call("wget -O %s %s" % (destination_file_path, sequence_url), shell=True)
         
     except urllib2.URLError:
         
