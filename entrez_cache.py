@@ -4,7 +4,7 @@ import uuid
 import time
 import os
 from Bio import Entrez, SeqIO
-from talconfig import BASE_DIR
+from talconfig import BASE_DIR, REDIS_SERVER_HOSTNAME, REDIS_SERVER_PORT
 from talutil import TaskError
 
 
@@ -21,7 +21,7 @@ class CachedEntrezFile(object):
     
     def __init__(self, seq_id):
         
-        self.conn = redis.StrictRedis(host='localhost', port=6379, db=1)
+        self.conn = redis.StrictRedis(host=REDIS_SERVER_HOSTNAME, port=REDIS_SERVER_PORT, db=1)
         
         try:
             Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
