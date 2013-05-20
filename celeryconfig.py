@@ -1,8 +1,9 @@
 from datetime import timedelta
+from talconfig import REDIS_SERVER_HOSTNAME, REDIS_SERVER_PORT
 
 BROKER_BACKEND = "redis"
-BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+BROKER_URL = "redis://" + REDIS_SERVER_HOSTNAME + ":" + REDIS_SERVER_PORT + "/0"
+CELERY_RESULT_BACKEND = "redis://" + REDIS_SERVER_HOSTNAME + ":" + REDIS_SERVER_PORT + "/0"
 
 CELERY_TRACK_STARTED = True
 CELERY_TASK_SERIALIZER = "json"

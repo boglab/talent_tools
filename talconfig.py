@@ -8,3 +8,5 @@ RVD_SEQ_REGEX = r'^(?:(?:[ACDEFGHIKLMNPQRSTVWY][ACDEFGHIKLMNPQRSTVWY\*])[ _]+){1
 DRUPAL_CALLBACK_URL = "https://tale-nt.cac.cornell.edu/talent/jobcomplete/"
 VALID_GENOME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens', 'rattus_norvegicus', 'brachypodium_distachyon', 'solanum_lycopersicum']
 VALID_PROMOTEROME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens', 'rattus_norvegicus', 'brachypodium_distachyon']
+REDIS_SERVER_HOSTNAME = "localhost"
+REDIS_SERVER_PORT = "6379"
