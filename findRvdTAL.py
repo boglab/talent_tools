@@ -37,7 +37,8 @@ def validateOptions(options):
         if options.genome or options.promoterome:
             raise TaskError("--genome and --promoterome options cannot be combined with --ncbi")
         
-        check_ncbi_sequence(options.ncbi)
+        with CachedEntrezFile(options.ncbi) as ncbi_file:
+            check_fasta_pasta(ncbi_file.file)
         
     else:
         

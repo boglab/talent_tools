@@ -160,7 +160,13 @@ def validateOptions(options):
         if options.offtargets_fasta != "NA" or options.genome or options.promoterome:
             raise TaskError("--offtargets-fasta, --genome and --promoterome options cannot be combined with --offtargets-ncbi")
         
-        check_ncbi_sequence_offtargets(options.offtargets_ncbi)
+        with CachedEntrezFile(options.offtargets_ncbi) as ncbi_file:
+        
+            check_fasta_pasta(ncbi_file.file)
+            
+            for record in FastaIterator(ncbi_file.file, alphabet=generic_dna):
+                if len(record.seq) > 300000000:
+                    raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 300 megabases in size")
         
         options.check_offtargets = True
     
