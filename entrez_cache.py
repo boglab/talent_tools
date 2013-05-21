@@ -148,7 +148,8 @@ if redis_found:
                                 pipe.multi()
                                 #pipe.hset(self.lock_name, "writers", pickle.dumps(lock_writers))
                                 # since file will only be downloaded if key doesn't exist (because there's no way to check if local sequence
-                                # file is corrupted), and there's only one writer at a time, remove key so that redownload of file is attempted
+                                # file is corrupted), and there's only one writer at a time, removing the only writer means the local file
+                                # is likely corrupted, so we remove the key so that redownload of file is attempted
                                 pipe.delete(self.lock_name)
                                 pipe.execute()
                                 
