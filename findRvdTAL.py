@@ -1,8 +1,8 @@
 from talesf import ScoreTalesfTask
 
 from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
-
-from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError, check_fasta_pasta
+from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError, check_fasta_pasta, check_ncbi_sequence, Conditional
+from entrez_cache import CachedEntrezFile
 
 celery_found = True
 try:
@@ -32,12 +32,21 @@ def validateOptions(options):
     if not RVD_re.match(options.rvdString):
         raise TaskError("RVD sequence is not in the correct format.  Enter between 12 and 31 RVDs using the standard single letter amino acid abbreviations.")
     
-    if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
-        raise TaskError("Invalid organism specified.")
-    
-    if not options.genome and not options.promoterome:
-        with open(options.fasta, 'r') as seq_file:
-            check_fasta_pasta(seq_file)
+    if options.ncbi != "NA":
+        
+        if options.genome or options.promoterome:
+            raise TaskError("--genome and --promoterome options cannot be combined with --ncbi")
+        
+        check_ncbi_sequence(options.ncbi)
+        
+    else:
+        
+        if ((options.genome and options.organism not in VALID_GENOME_ORGANISMS) or (options.promoterome and options.organism not in VALID_PROMOTEROME_ORGANISMS)):
+            raise TaskError("Invalid organism specified.")
+        
+        if not options.genome and not options.promoterome:
+            with open(options.fasta, 'r') as seq_file:
+                check_fasta_pasta(seq_file)
 
 def RunTalesfTask(options):
     
@@ -50,17 +59,21 @@ def RunTalesfTask(options):
     else:
         forwardOnly = True
     
-    if options.genome:
-        seqFilename = GENOME_FILE % options.organism
-    elif options.promoterome:
-        seqFilename = PROMOTEROME_FILE % options.organism
-    else:
-        seqFilename = options.fasta
-    
-    result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 4, options.organism if options.genome else "")
-    
-    if(result == 1):
-        raise TaskError()
+    with Conditional(options.ncbi != "NA", CachedEntrezFile(options.ncbi)) as maybe_entrez_file:
+        
+        if options.ncbi != "NA":
+            seqFilename = maybe_entrez_file.filepath
+        elif options.genome:
+            seqFilename = GENOME_FILE % options.organism
+        elif options.promoterome:
+            seqFilename = PROMOTEROME_FILE % options.organism
+        else:
+            seqFilename = options.fasta
+        
+        result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 4, options.organism if options.genome else "")
+        
+        if(result == 1):
+            raise TaskError()
 
 if __name__ == '__main__':
     
@@ -69,6 +82,7 @@ if __name__ == '__main__':
     parser = OptParser(usage=usage)
     # input options
     parser.add_option('-f', '--fasta', dest='fasta', type='string', default='NA', help='Path to input file if input is not a genome or promoterome')
+    parser.add_option('--ncbi', dest='ncbi', type='string', default='NA', help='NCBI nucleotide sequence ID to search')
     parser.add_option('-y', '--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
     parser.add_option('-x', '--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
     parser.add_option('-o', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
