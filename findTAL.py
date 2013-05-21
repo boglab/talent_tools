@@ -3,7 +3,7 @@
 from Bio.Alphabet import generic_dna
 
 from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
-from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement, check_ncbi_sequence_offtargets, Conditional
+from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement, Conditional
 from entrez_cache import CachedEntrezFile
 
 celery_found = True

@@ -1,7 +1,7 @@
 from paired_talesf import ScorePairedTalesfTask
 
 from talconfig import RVD_SEQ_REGEX, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
-from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError, check_fasta_pasta, check_ncbi_sequence, Conditional
+from talutil import validate_options_handler, OptParser, create_logger, OptionObject, TaskError, check_fasta_pasta, Conditional
 from entrez_cache import CachedEntrezFile
 
 celery_found = True
