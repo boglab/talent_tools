@@ -3,6 +3,7 @@ import uuid
 import time
 import os
 import tempfile
+import urllib2
 from Bio import Entrez, SeqIO
 from talconfig import BASE_DIR, REDIS_SERVER_HOSTNAME, REDIS_SERVER_PORT
 from talutil import TaskError
@@ -32,13 +33,19 @@ if redis_found:
             self.conn = redis.StrictRedis(host=REDIS_SERVER_HOSTNAME, port=REDIS_SERVER_PORT, db=1)
             
             try:
+                
                 Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
                 Entrez.tool = "https://tale-nt.cac.cornell.edu"
                 search_handle = Entrez.esearch(db="nucleotide", term=seq_id)
                 search_record = Entrez.read(search_handle)
                 search_handle.close()
+                
+                if int(search_record["Count"]) < 1:
+                    raise TaskError("Invalid sequence ID provided")
+                
                 self.seq_id = search_record["IdList"][0]
-            except IOError:
+                
+            except (IOError, urllib2.HTTPError):
                 raise TaskError("Invalid sequence ID provided")
             
             self.lock_name = "gb_cache:%s" % self.seq_id
@@ -227,12 +234,18 @@ else:
         def __init__(self, seq_id):
             
             try:
+                
                 Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
                 search_handle = Entrez.esearch(db="nucleotide", term=seq_id)
                 search_record = Entrez.read(search_handle)
                 search_handle.close()
+                
+                if int(search_record["Count"]) < 1:
+                    raise TaskError("Invalid sequence ID provided")
+                
                 self.seq_id = search_record["IdList"][0]
-            except IOError:
+                
+            except (IOError, urllib2.HTTPError):
                 raise TaskError("Invalid sequence ID provided")
             
             self.file = None
