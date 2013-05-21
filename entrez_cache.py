@@ -17,9 +17,6 @@ except ImportError:
 # redis locking
 # http://www.dr-josiah.com/2012/01/creating-lock-with-redis.html
 
-# TODO
-# Add non-caching implementation if celery isn't found
-
 if redis_found:
     
     class CachedEntrezFile(object):
@@ -182,7 +179,7 @@ if redis_found:
             
             self.file = open(self.filepath, "r")
             
-            return self.file
+            return self
         
         def __exit__(self, exc_type, exc_value, traceback):
             
@@ -239,6 +236,7 @@ else:
                 raise TaskError("Invalid sequence ID provided")
             
             self.file = None
+            self.filepath = ""
         
         def __enter__(self):
             
@@ -248,7 +246,7 @@ else:
                 fetch_record = SeqIO.read(fetch_handle, "fasta")
                 fetch_handle.close()
                 
-                self.file = tempfile.TemporaryFile()
+                self.file = tempfile.NamedTemporaryFile()
                 
                 SeqIO.write([fetch_record], self.file, "fasta")
                 
@@ -257,7 +255,9 @@ else:
             except IOError:
                 raise TaskError("Could not download sequence from NCBI")
             
-            return self.file
+            self.filepath = self.file.name
+            
+            return self
         
         def __exit__(self, exc_type, exc_value, traceback):
             

@@ -3,7 +3,8 @@
 from Bio.Alphabet import generic_dna
 
 from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
-from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement
+from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement, check_ncbi_sequence_offtargets, Conditional
+from entrez_cache import CachedEntrezFile
 
 celery_found = True
 try:
@@ -153,11 +154,20 @@ def validateOptions(options):
     
     if options.max < options.min:
         raise TaskError("Maximum spacer length cannot be less than the minimum spacer length")
-
+    
+    if options.offtargets_ncbi != "NA":
+        
+        if options.offtargets_fasta != "NA" or options.genome or options.promoterome:
+            raise TaskError("--offtargets-fasta, --genome and --promoterome options cannot be combined with --offtargets-ncbi")
+        
+        check_ncbi_sequence_offtargets(options.offtargets_ncbi)
+        
+        options.check_offtargets = True
+    
     if options.offtargets_fasta != "NA":
         
-        if options.genome or options.promoterome:
-            raise TaskError("--genome and --promoterome options cannot be combined with --offtargets-fasta")
+        if options.offtargets_ncbi != "NA" or options.genome or options.promoterome:
+            raise TaskError("--offtargets-ncbi, --genome and --promoterome options cannot be combined with --offtargets-fasta")
         
         if (not os.path.exists(options.offtargets_fasta) or os.path.getsize(options.offtargets_fasta) <= 2):
             raise TaskError("Off-target FASTA file must exist and be non-empty.")
@@ -192,301 +202,306 @@ def RunFindTALTask(options):
     
     logger("Beginning")
     
-    if options.check_offtargets:
+    with Conditional(options.check_offtargets and options.offtargets_ncbi != "NA", CachedEntrezFile(options.offtargets_ncbi)) as maybe_entrez_file:
         
-        if not tfcount_found:
-            raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
-        
-        offtarget_seq_filename = ""
-        
-        if options.offtargets_fasta != "NA":
+        if options.check_offtargets:
+            
+            if not tfcount_found:
+                raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
+            
+            offtarget_seq_filename = ""
+            
+            if options.offtargets_fasta != "NA":
                 offtarget_seq_filename = options.offtargets_fasta
-        elif options.genome:
-            offtarget_seq_filename = GENOME_FILE % options.organism
-        elif options.promoterome:
-            offtarget_seq_filename = PROMOTEROME_FILE % options.organism
+            elif options.offtargets_ncbi != "NA":
+                offtarget_seq_filename = maybe_entrez_file.filepath
+            elif options.genome:
+                offtarget_seq_filename = GENOME_FILE % options.organism
+            elif options.promoterome:
+                offtarget_seq_filename = PROMOTEROME_FILE % options.organism
+            else:
+                offtarget_seq_filename = options.fasta
+        
+        strong_binding_RVDs = {
+            'A':'NI',
+            'C':'HD',
+            'G':'NN',
+            'T':'NG'
+        }
+        
+        if options.gspec:
+            strong_binding_RVDs['G'] = 'NH'
+        
+        seq_file = open(options.fasta, 'r')
+        
+        if options.outpath == 'NA':
+            output_filepath = options.outdir + options.job + options.outfile
         else:
-            offtarget_seq_filename = options.fasta
+            output_filepath = options.outpath
     
-    strong_binding_RVDs = {
-        'A':'NI',
-        'C':'HD',
-        'G':'NN',
-        'T':'NG'
-    }
-    
-    if options.gspec:
-        strong_binding_RVDs['G'] = 'NH'
-    
-    seq_file = open(options.fasta, 'r')
-    
-    if options.outpath == 'NA':
-        output_filepath = options.outdir + options.job + options.outfile
-    else:
-        output_filepath = options.outpath
-
-    out = open(output_filepath, 'w')
-    
-    table_ignores = ["TAL1 length", "TAL2 length", "Spacer length"]
-    
-    out.write("table_ignores:" + ','.join(table_ignores) + "\n")
-
-    strand_min = 15 if options.arraymin is None else options.arraymin
-    strand_max = 20 if options.arraymax is None else options.arraymax
-    
-    spacer_min = 15 if options.min is None else options.min
-    spacer_max = 30 if options.max is None else options.max
-    
-    u_bases = []
-    
-    if options.cupstream != 1:
-        u_bases.append("T")
-    
-    if options.cupstream != 0:
-        u_bases.append("C")
+        out = open(output_filepath, 'w')
         
-    out.write("options_used:" + ', '.join([
-        "array_min = " + str(strand_min),
-        "array_max = " + str(strand_max),
-        "spacer_min = " + str(spacer_min),
-        "spacer_max = " + str(spacer_max),
-        "upstream_base = " + (" or ".join(u_bases))
-    ]) + "\n")
+        table_ignores = ["TAL1 length", "TAL2 length", "Spacer length"]
+        
+        out.write("table_ignores:" + ','.join(table_ignores) + "\n")
     
-    offtarget_header = "\tOff-Target Counts" if options.check_offtargets else ""
-    
-    out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique RE sites in spacer\t% RVDs HD or NN/NH' + offtarget_header + '\n')
-    
-    binding_sites = []
-    
-    for gene in FastaIterator(seq_file, alphabet=generic_dna):
+        strand_min = 15 if options.arraymin is None else options.arraymin
+        strand_max = 20 if options.arraymax is None else options.arraymax
         
-        sequence = str(gene.seq).upper()
+        spacer_min = 15 if options.min is None else options.min
+        spacer_max = 30 if options.max is None else options.max
         
-        site_entry_counts = {}
+        u_bases = []
         
-        if options.filter == 1:
-            if options.filterbase > len(sequence):
-                logger("Skipped %s as the provided cut site was greater than the sequence length" % (gene.id))
-                continue
-            cut_site_positions = [options.filterbase]
-        else:
-            cut_site_positions = range(len(sequence))
+        if options.cupstream != 1:
+            u_bases.append("T")
         
-        logger("Scanning %s for binding sites" % (gene.id))
-        
-        for i in cut_site_positions:
+        if options.cupstream != 0:
+            u_bases.append("C")
             
-            cut_site_potential_sites = []
+        out.write("options_used:" + ', '.join([
+            "array_min = " + str(strand_min),
+            "array_max = " + str(strand_max),
+            "spacer_min = " + str(spacer_min),
+            "spacer_max = " + str(spacer_max),
+            "upstream_base = " + (" or ".join(u_bases))
+        ]) + "\n")
+        
+        offtarget_header = "\tOff-Target Counts" if options.check_offtargets else ""
+        
+        out.write('Sequence Name\tCut Site\tTAL1 start\tTAL2 start\tTAL1 length\tTAL2 length\tSpacer length\tSpacer range\tTAL1 RVDs\tTAL2 RVDs\tPlus strand sequence\tUnique RE sites in spacer\t% RVDs HD or NN/NH' + offtarget_header + '\n')
+        
+        binding_sites = []
+        
+        for gene in FastaIterator(seq_file, alphabet=generic_dna):
             
-            for spacer_size in range(spacer_min, spacer_max + 1):
-                
-                spacer_potential_sites = []
-                
-                spacer_size_left = int(math.floor(float(spacer_size) / 2))
-                spacer_size_right = int(math.ceil(float(spacer_size) / 2))
-                
-                if i < (strand_min + spacer_size_left + 1) or i > (len(sequence) - (strand_min + spacer_size_right) - 1):
+            sequence = str(gene.seq).upper()
+            
+            site_entry_counts = {}
+            
+            if options.filter == 1:
+                if options.filterbase > len(sequence):
+                    logger("Skipped %s as the provided cut site was greater than the sequence length" % (gene.id))
                     continue
+                cut_site_positions = [options.filterbase]
+            else:
+                cut_site_positions = range(len(sequence))
+            
+            logger("Scanning %s for binding sites" % (gene.id))
+            
+            for i in cut_site_positions:
                 
-                for u_base in u_bases:
+                cut_site_potential_sites = []
+                
+                for spacer_size in range(spacer_min, spacer_max + 1):
                     
-                    if u_base == "T":
-                        d_base = "A"
-                    elif u_base == "C":
-                        d_base = "G"
+                    spacer_potential_sites = []
+                    
+                    spacer_size_left = int(math.floor(float(spacer_size) / 2))
+                    spacer_size_right = int(math.ceil(float(spacer_size) / 2))
+                    
+                    if i < (strand_min + spacer_size_left + 1) or i > (len(sequence) - (strand_min + spacer_size_right) - 1):
+                        continue
+                    
+                    for u_base in u_bases:
                         
-                    u_pos_search_start = i - (strand_max + spacer_size_left) - 1
-                    
-                    if u_pos_search_start < 0:
-                        u_pos_search_start = 0
-                        
-                    u_pos_search_end = i - (strand_min + spacer_size_left)
-                    
-                    d_pos_search_start = i + (strand_min + spacer_size_right)
-                    d_pos_search_end = i + (strand_max + spacer_size_right) + 1
-                    
-                    u_positions = []
-    
-                    u_pos = 0
-                    
-                    while True:
-                        
-                        u_pos = sequence.rfind(u_base, u_pos_search_start, u_pos_search_end)
-                        
-                        if u_pos == -1:
-                            break
-                        else:
-                            u_pos_search_end = u_pos
-                            u_positions.append(u_pos)
-                    
-                    d_positions = []
-                    
-                    d_pos = 0
-                    
-                    while True:
-                        
-                        d_pos = sequence.find(d_base, d_pos_search_start, d_pos_search_end)
-                        
-                        if d_pos == -1:
-                            break
-                        else:
-                            d_pos_search_start = d_pos + 1
-                            d_positions.append(d_pos)
-                    
-                    break_out = False
-                    
-                    for u_pos in reversed(u_positions):
-                        
-                        for d_pos in reversed(d_positions):
+                        if u_base == "T":
+                            d_base = "A"
+                        elif u_base == "C":
+                            d_base = "G"
                             
-                            #uses inclusive start, exclusive end
-                            tal1_start = u_pos + 1
-                            tal1_end = i - spacer_size_left
-                            tal1_seq = sequence[tal1_start : tal1_end]
-                            tal2_start = i + spacer_size_right
-                            tal2_end = d_pos
-                            tal2_seq = sequence[tal2_start : tal2_end]
+                        u_pos_search_start = i - (strand_max + spacer_size_left) - 1
+                        
+                        if u_pos_search_start < 0:
+                            u_pos_search_start = 0
                             
-                            if not ((tal1_seq in site_entry_counts and tal2_seq in site_entry_counts[tal1_seq]) or \
-                            (tal1_seq in site_entry_counts and tal1_seq in site_entry_counts[tal1_seq]) or \
-                            (tal2_seq in site_entry_counts and tal1_seq in site_entry_counts[tal2_seq]) or \
-                            (tal2_seq in site_entry_counts and tal2_seq in site_entry_counts[tal2_seq])):
+                        u_pos_search_end = i - (strand_min + spacer_size_left)
+                        
+                        d_pos_search_start = i + (strand_min + spacer_size_right)
+                        d_pos_search_end = i + (strand_max + spacer_size_right) + 1
+                        
+                        u_positions = []
+        
+                        u_pos = 0
+                        
+                        while True:
+                            
+                            u_pos = sequence.rfind(u_base, u_pos_search_start, u_pos_search_end)
+                            
+                            if u_pos == -1:
+                                break
+                            else:
+                                u_pos_search_end = u_pos
+                                u_positions.append(u_pos)
+                        
+                        d_positions = []
+                        
+                        d_pos = 0
+                        
+                        while True:
+                            
+                            d_pos = sequence.find(d_base, d_pos_search_start, d_pos_search_end)
+                            
+                            if d_pos == -1:
+                                break
+                            else:
+                                d_pos_search_start = d_pos + 1
+                                d_positions.append(d_pos)
+                        
+                        break_out = False
+                        
+                        for u_pos in reversed(u_positions):
+                            
+                            for d_pos in reversed(d_positions):
                                 
-                                bad_site = False
+                                #uses inclusive start, exclusive end
+                                tal1_start = u_pos + 1
+                                tal1_end = i - spacer_size_left
+                                tal1_seq = sequence[tal1_start : tal1_end]
+                                tal2_start = i + spacer_size_right
+                                tal2_end = d_pos
+                                tal2_seq = sequence[tal2_start : tal2_end]
                                 
-                                cg_count = 0
-                                
-                                tal1_rvd = []
-                                
-                                for c in tal1_seq:
+                                if not ((tal1_seq in site_entry_counts and tal2_seq in site_entry_counts[tal1_seq]) or \
+                                (tal1_seq in site_entry_counts and tal1_seq in site_entry_counts[tal1_seq]) or \
+                                (tal2_seq in site_entry_counts and tal1_seq in site_entry_counts[tal2_seq]) or \
+                                (tal2_seq in site_entry_counts and tal2_seq in site_entry_counts[tal2_seq])):
                                     
-                                    if c not in strong_binding_RVDs:
-                                        bad_site = True
-                                        break
+                                    bad_site = False
                                     
-                                    if c == 'C' or c == 'G':
-                                        cg_count += 1
+                                    cg_count = 0
                                     
-                                    tal1_rvd.append(strong_binding_RVDs[c])
-                                
-                                if bad_site:
-                                    continue
-                                
-                                tal1_rvd = ' '.join(tal1_rvd)
-                                
-                                tal2_rvd = []
-                                
-                                for c in reverseComplement(tal2_seq):
+                                    tal1_rvd = []
                                     
-                                    if c not in strong_binding_RVDs:
-                                        bad_site = True
-                                        break
-                                    
-                                    if c == 'C' or c == 'G':
-                                        cg_count += 1
+                                    for c in tal1_seq:
                                         
-                                    tal2_rvd.append(strong_binding_RVDs[c])
-                                
-                                if bad_site:
-                                    continue
-                                
-                                tal2_rvd = ' '.join(tal2_rvd)
-                                
-                                if options.filter == 0:
-                                    break_out = True
-                                
-                                binding_site = BindingSite(seq_id = gene.id,
-                                               cutsite = i,
-                                               seq1_start = tal1_start,
-                                               seq1_end = tal1_end,
-                                               seq1_seq = tal1_seq,
-                                               seq1_rvd = tal1_rvd,
-                                               spacer_start = tal1_end,
-                                               spacer_end = tal2_start,
-                                               spacer_seq = sequence[tal1_end : tal2_start],
-                                               seq2_start = tal2_start,
-                                               seq2_end = tal2_end,
-                                               seq2_seq = tal2_seq,
-                                               seq2_rvd = tal2_rvd,
-                                               upstream = u_base,
-                                               cg_percent = int(round(float(cg_count) / (len(tal1_seq) + len(tal2_seq)), 2) * 100))
-                                
-                                findRESitesInSpacer(sequence, binding_site)
-                                
-                                if binding_site.seq1_seq not in site_entry_counts:
-                                    site_entry_counts[binding_site.seq1_seq] = {}
+                                        if c not in strong_binding_RVDs:
+                                            bad_site = True
+                                            break
+                                        
+                                        if c == 'C' or c == 'G':
+                                            cg_count += 1
+                                        
+                                        tal1_rvd.append(strong_binding_RVDs[c])
                                     
-                                if binding_site.seq2_seq not in site_entry_counts[tal1_seq]:
-                                    site_entry_counts[binding_site.seq1_seq][binding_site.seq2_seq] = []
+                                    if bad_site:
+                                        continue
                                     
-                                site_entry_counts[binding_site.seq1_seq][binding_site.seq2_seq].append(binding_site)
-                                spacer_potential_sites.append(binding_site)
+                                    tal1_rvd = ' '.join(tal1_rvd)
+                                    
+                                    tal2_rvd = []
+                                    
+                                    for c in reverseComplement(tal2_seq):
+                                        
+                                        if c not in strong_binding_RVDs:
+                                            bad_site = True
+                                            break
+                                        
+                                        if c == 'C' or c == 'G':
+                                            cg_count += 1
+                                            
+                                        tal2_rvd.append(strong_binding_RVDs[c])
+                                    
+                                    if bad_site:
+                                        continue
+                                    
+                                    tal2_rvd = ' '.join(tal2_rvd)
+                                    
+                                    if options.filter == 0:
+                                        break_out = True
+                                    
+                                    binding_site = BindingSite(seq_id = gene.id,
+                                                   cutsite = i,
+                                                   seq1_start = tal1_start,
+                                                   seq1_end = tal1_end,
+                                                   seq1_seq = tal1_seq,
+                                                   seq1_rvd = tal1_rvd,
+                                                   spacer_start = tal1_end,
+                                                   spacer_end = tal2_start,
+                                                   spacer_seq = sequence[tal1_end : tal2_start],
+                                                   seq2_start = tal2_start,
+                                                   seq2_end = tal2_end,
+                                                   seq2_seq = tal2_seq,
+                                                   seq2_rvd = tal2_rvd,
+                                                   upstream = u_base,
+                                                   cg_percent = int(round(float(cg_count) / (len(tal1_seq) + len(tal2_seq)), 2) * 100))
+                                    
+                                    findRESitesInSpacer(sequence, binding_site)
+                                    
+                                    if binding_site.seq1_seq not in site_entry_counts:
+                                        site_entry_counts[binding_site.seq1_seq] = {}
+                                        
+                                    if binding_site.seq2_seq not in site_entry_counts[tal1_seq]:
+                                        site_entry_counts[binding_site.seq1_seq][binding_site.seq2_seq] = []
+                                        
+                                    site_entry_counts[binding_site.seq1_seq][binding_site.seq2_seq].append(binding_site)
+                                    spacer_potential_sites.append(binding_site)
+                                    
+                                if break_out:
+                                    break
                                 
                             if break_out:
                                 break
-                            
-                        if break_out:
-                            break
+                    
+                    if len(spacer_potential_sites) > 0:
+                        if options.filter == 0:
+                            cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
+                        else:
+                            cut_site_potential_sites.extend(spacer_potential_sites)
+                    
                 
-                if len(spacer_potential_sites) > 0:
+                if len(cut_site_potential_sites) > 0:
                     if options.filter == 0:
-                        cut_site_potential_sites.append(reduce(filterByTALSize, spacer_potential_sites))
+                        binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
                     else:
-                        cut_site_potential_sites.extend(spacer_potential_sites)
-                
-            
-            if len(cut_site_potential_sites) > 0:
-                if options.filter == 0:
-                    binding_sites.append(reduce(filterByTALSize, cut_site_potential_sites))
-                else:
-                    binding_sites.extend(cut_site_potential_sites)
-    
-    
-    if options.streubel:
-        binding_sites[:] = list(ifilterfalse(filterStreubel, binding_sites))
-    
-    if options.check_offtargets:
+                        binding_sites.extend(cut_site_potential_sites)
         
-        if len(binding_sites) > 0:
-            
-            off_target_pairs = []
-            
-            for i, binding_site in enumerate(binding_sites):
-                off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
-            
-            off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
-            
-            for i, binding_site in enumerate(binding_sites):
-                binding_site.offtarget_counts = off_target_counts[i]
-    
-    for i, binding_site in enumerate(binding_sites):
         
-        output_items = [
-            str(binding_site.seq_id),
-            str(binding_site.cutsite),
-            str(binding_site.seq1_start),
-            str(binding_site.seq2_end - 1),
-            str(binding_site.seq1_end - binding_site.seq1_start),
-            str(binding_site.seq2_end - binding_site.seq2_start),
-            str(binding_site.spacer_end - binding_site.spacer_start),
-            str(binding_site.spacer_start) + '-' + str(binding_site.spacer_end - 1),
-            binding_site.seq1_rvd,
-            binding_site.seq2_rvd,
-            binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
-            binding_site.re_sites,
-            str(binding_site.cg_percent)
-        ]
+        if options.streubel:
+            binding_sites[:] = list(ifilterfalse(filterStreubel, binding_sites))
         
         if options.check_offtargets:
-            output_items.append(' '.join(str(binding_site.offtarget_counts[x]) for x in range(5)))
+            
+            if len(binding_sites) > 0:
+                
+                off_target_pairs = []
+                
+                for i, binding_site in enumerate(binding_sites):
+                    off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
+                
+                
+                off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+                
+                for i, binding_site in enumerate(binding_sites):
+                    binding_site.offtarget_counts = off_target_counts[i]
         
-        out.write("\t".join(output_items) + "\n")
-
-    out.close()
-    seq_file.close()
-
-    logger('Finished')
+        for i, binding_site in enumerate(binding_sites):
+            
+            output_items = [
+                str(binding_site.seq_id),
+                str(binding_site.cutsite),
+                str(binding_site.seq1_start),
+                str(binding_site.seq2_end - 1),
+                str(binding_site.seq1_end - binding_site.seq1_start),
+                str(binding_site.seq2_end - binding_site.seq2_start),
+                str(binding_site.spacer_end - binding_site.spacer_start),
+                str(binding_site.spacer_start) + '-' + str(binding_site.spacer_end - 1),
+                binding_site.seq1_rvd,
+                binding_site.seq2_rvd,
+                binding_site.upstream + ' ' + binding_site.seq1_seq + ' ' + binding_site.spacer_seq.lower() + ' ' + binding_site.seq2_seq + ' ' + ("A" if binding_site.upstream == "T" else "G"),
+                binding_site.re_sites,
+                str(binding_site.cg_percent)
+            ]
+            
+            if options.check_offtargets:
+                output_items.append(' '.join(str(binding_site.offtarget_counts[x]) for x in range(5)))
+            
+            out.write("\t".join(output_items) + "\n")
+        
+        out.close()
+        seq_file.close()
+        
+        logger('Finished')
 
 if __name__ == '__main__':
     
@@ -506,6 +521,7 @@ if __name__ == '__main__':
     # Offtarget Options
     parser.add_option('--offtargets', dest='check_offtargets', action = 'store_true', default = False, help='Check offtargets')
     parser.add_option('--offtargets-fasta', dest='offtargets_fasta', type='string', default='NA', help='FASTA file containing to search for off-targets')
+    parser.add_option('--offtargets-ncbi', dest='offtargets_ncbi', type='string', default='NA', help='NCBI nucleotide sequence ID to search for off-targets')
     parser.add_option('--genome', dest='genome', action = 'store_true', default = False, help='Input is a genome file')
     parser.add_option('--promoterome', dest='promoterome', action = 'store_true', default = False, help='Input is a promoterome file')
     parser.add_option('--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')

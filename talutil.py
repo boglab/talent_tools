@@ -1,5 +1,5 @@
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import single_letter_alphabet
+from Bio.Alphabet import single_letter_alphabet, generic_dna
 from Bio.Seq import Seq
 
 import string
@@ -16,6 +16,7 @@ except ImportError:
     celery_found = False
 
 from talconfig import DRUPAL_CALLBACK_URL
+from entrez_cache import CachedEntrezFile
 
 class TaskError(ValueError):
     pass
@@ -140,6 +141,21 @@ def check_fasta_pasta(seq_file):
     #if(seq_file.tell() != 0):
     #   logger("Warning: The first valid FASTA header in your input was not at the start of the sequence / file and any characters preceeding it were ignored. Please check that you didn't omit a header by mistake.")
 
+def check_ncbi_sequence(seq_id):
+    
+    with CachedEntrezFile(seq_id) as ncbi_file:
+        check_fasta_pasta(ncbi_file.file)
+
+def check_ncbi_sequence_offtargets():
+    
+    with CachedEntrezFile(seq_id) as ncbi_file:
+        
+        check_fasta_pasta(ncbi_file.file)
+        
+        for record in FastaIterator(ncbi_file.file, alphabet=generic_dna):
+            if len(record.seq) > 300000000:
+                raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 300 megabases in size")
+
 class OptParser(OptionParser):
     def error(self, msg):
         """error(msg : string)
@@ -170,3 +186,28 @@ def reverseComplement(sequence):
             new_sequence += 'N'
 
     return new_sequence
+
+#https://pypi.python.org/pypi/conditional
+class Conditional(object):
+    
+    """Wrap another context manager and enter it only if condition is true."""
+
+    def __init__(self, condition, contextmanager):
+        
+        self.condition = condition
+        self.contextmanager = contextmanager
+
+    def __enter__(self):
+        
+        if self.condition:
+            return self.contextmanager.__enter__()
+        else:
+            return False
+
+    def __exit__(self, *args):
+        
+        if self.condition:
+            return self.contextmanager.__exit__(*args)
+        else:
+            return False
+    
