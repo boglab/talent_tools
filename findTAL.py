@@ -208,6 +208,9 @@ def RunFindTALTask(options):
     
     logger("Beginning")
     
+    if options.check_offtargets and options.offtargets_ncbi != "NA":
+        logger("Retrieving NCBI off-target sequence. This could take a while if this sequence hasn't been used recently and needs to be downloaded from NCBI.")
+    
     with Conditional(options.check_offtargets and options.offtargets_ncbi != "NA", CachedEntrezFile(options.offtargets_ncbi)) as maybe_entrez_file:
         
         if options.check_offtargets:

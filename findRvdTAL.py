@@ -60,6 +60,9 @@ def RunTalesfTask(options):
     else:
         forwardOnly = True
     
+    if options.ncbi != "NA":
+        logger("Retrieving NCBI sequence. This could take a while if this sequence hasn't been used recently and needs to be downloaded from NCBI.")
+    
     with Conditional(options.ncbi != "NA", CachedEntrezFile(options.ncbi)) as maybe_entrez_file:
         
         if options.ncbi != "NA":
