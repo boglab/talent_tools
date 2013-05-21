@@ -98,9 +98,6 @@ if redis_found:
                             # I dunno
                             pass
                         
-                        #subprocess.check_call("rm -f %s/chromFa.tar.gz" % CachedEntrezFile.CACHED_FILE_DIR, shell=True)
-                        #subprocess.check_call("wget -O %s/chromFa.tar.gz ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Homo_sapiens/bigZips/chromFa.tar.gz" % CachedEntrezFile.CACHED_FILE_DIR, shell = True)
-                        
                         print("File for key %s finished downloading, removing writer")
                         
                         pipe.watch(self.lock_name)
@@ -135,11 +132,13 @@ if redis_found:
                                 print("Writer for key %s with UUID %s, timestamp %s, current time %s" % (self.lock_name, l_uuid, str(l_timestamp), str(timestamp)))
                                 
                                 if l_uuid == self.uuid:
+                                    
                                     print("Writer for key %s has our UUID, previous attempt to remove writer failed, retrying" % self.lock_name)
                                     del lock_writers[l_uuid]
                                     writers_changed = True
-                                
-                                if l_timestamp < timestamp:
+                                    
+                                elif l_timestamp < timestamp:
+                                    
                                     print("Writer for %s with UUID %s expired, removing" % (self.lock_name, l_uuid))
                                     del lock_writers[l_uuid]
                                     writers_changed = True
