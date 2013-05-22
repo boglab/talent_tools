@@ -40,8 +40,7 @@ def validateOptions(options):
         if options.genome or options.promoterome:
             raise TaskError("--genome and --promoterome options cannot be combined with --ncbi")
         
-        with CachedEntrezFile(options.ncbi) as ncbi_file:
-            check_fasta_pasta(ncbi_file.file)
+        # NCBI sequence validation is performed after the task has started instead of here to avoid having to download large files more than once
         
     else:
         
@@ -62,6 +61,10 @@ def RunPairedTalesfTask(options):
         logger("Retrieving NCBI sequence. This could take a while if this sequence hasn't been used recently and needs to be downloaded from NCBI.")
     
     with Conditional(options.ncbi != "NA", CachedEntrezFile(options.ncbi)) as maybe_entrez_file:
+        
+        if options.ncbi != "NA":
+            # Validate downloaded sequence
+            check_fasta_pasta(maybe_entrez_file.file)
         
         if options.ncbi != "NA":
             seqFilename = maybe_entrez_file.filepath

@@ -160,13 +160,7 @@ def validateOptions(options):
         if options.offtargets_fasta != "NA" or options.genome or options.promoterome:
             raise TaskError("--offtargets-fasta, --genome and --promoterome options cannot be combined with --offtargets-ncbi")
         
-        with CachedEntrezFile(options.offtargets_ncbi) as ncbi_file:
-        
-            check_fasta_pasta(ncbi_file.file)
-            
-            for record in FastaIterator(ncbi_file.file, alphabet=generic_dna):
-                if len(record.seq) > 300000000:
-                    raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 300 megabases in size")
+        # NCBI sequence validation is performed after the task has started instead of here to avoid having to download large files more than once
         
         options.check_offtargets = True
     
@@ -217,6 +211,18 @@ def RunFindTALTask(options):
             
             if not tfcount_found:
                 raise TaskError("Non off-target counting worker attempted to process off-target counting task.")
+            
+            if options.offtargets_ncbi != "NA":
+                
+                logger("Finished retrieving NCBI off-target sequence.")
+                
+                # Validate downloaded sequence
+                
+                check_fasta_pasta(maybe_entrez_file.file)
+                
+                for record in FastaIterator(maybe_entrez_file.file, alphabet=generic_dna):
+                    if len(record.seq) > 300000000:
+                        raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 300 megabases in size")
             
             offtarget_seq_filename = ""
             
