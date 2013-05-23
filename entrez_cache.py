@@ -98,7 +98,7 @@ if redis_found:
                 #    raise TaskError("Invalid assembly ID provided")
                 
             except (IOError, urllib2.HTTPError):
-                raise TaskError("Invalid assembly ID provided")
+                raise TaskError("Invalid NCBI ID provided")
             
             self.lock_name = "gb_cache:%s" % self.assembly_id
             self.uuid = str(uuid.uuid4())
@@ -342,7 +342,7 @@ else:
                 self.nuc_seq_ids = nuc_seq_ids
                 
             except (IOError, urllib2.HTTPError):
-                raise TaskError("Invalid assembly ID provided")
+                raise TaskError("Invalid NCBI ID provided")
             
             self.file = None
             self.filepath = ""
