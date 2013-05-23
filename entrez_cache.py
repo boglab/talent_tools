@@ -83,7 +83,7 @@ if redis_found:
                         if int(erecord["Count"]) > 1:
                             logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, choosing the first")
                         
-                        self.assembly_id = "nucleotide:" + erecord["IdList"][0]
+                        self.assembly_id = "nucleotide_" + erecord["IdList"][0]
                         nuc_seq_ids.append(erecord["IdList"][0])
                         
                     else:
