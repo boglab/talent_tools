@@ -74,23 +74,41 @@ if redis_found:
                 
                 if len(nuc_seq_ids) == 0:
                     
-                    logger("Provided NCBI ID did not match an assembly, or matched an assembly with no associated sequences")
-                    logger("Checking if NCBI ID matches nucleotide sequence")
-                    
-                    ehandle = Entrez.esearch(db="nucleotide", term=assembly_id)
+                    ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_insdc")
                     erecord = Entrez.read(ehandle)
                     ehandle.close()
                     
-                    if int(erecord["Count"]) != 0:
+                    canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
+                    
+                    if len(canonical_assembly_ids) == 0:
+                        logger("Warning: NCBI search for assembly ID returned more than 1 record, choosing the first")
+                    
+                    self.assembly_id = canonical_assembly_ids[0]
+                    
+                    nuc_seq_ids = []
+                    
+                    if len(erecord[0]["LinkSetDb"]) != 0:
+                        nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
+                    
+                    if len(nuc_seq_ids) == 0:
                         
-                        if int(erecord["Count"]) > 1:
-                            logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, choosing the first")
+                        logger("Provided NCBI ID did not match an assembly, or matched an assembly with no associated sequences")
+                        logger("Checking if NCBI ID matches nucleotide sequence")
                         
-                        self.assembly_id = "nucleotide_" + erecord["IdList"][0]
-                        nuc_seq_ids.append(erecord["IdList"][0])
+                        ehandle = Entrez.esearch(db="nucleotide", term=assembly_id)
+                        erecord = Entrez.read(ehandle)
+                        ehandle.close()
                         
-                    else:
-                        raise TaskError("No assemblies or nucleotide sequences found for given ID")
+                        if int(erecord["Count"]) != 0:
+                            
+                            if int(erecord["Count"]) > 1:
+                                logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, choosing the first")
+                            
+                            self.assembly_id = "nucleotide_" + erecord["IdList"][0]
+                            nuc_seq_ids.append(erecord["IdList"][0])
+                            
+                        else:
+                            raise TaskError("No assemblies or nucleotide sequences found for given ID")
                 
                 self.nuc_seq_ids = nuc_seq_ids
                 
