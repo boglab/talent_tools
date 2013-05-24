@@ -18,6 +18,8 @@ with open(version_dump_filepath, "rb") as versions_file:
     sequence_versions = pickle.load(versions_file)
 
 #genome sequences
+#gasterosteus_aculeatus (stickleback) genome is at ftp://hgdownload.cse.ucsc.edu/goldenPath/gasAcu1/bigZips/chromFa.tar.gz
+#it isn't automatically updatable, tar.gz file contains each chromosome as individual file
 
 genome_urls = {
     "homo_sapiens": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.{0}.dna.toplevel.fa.gz",
@@ -29,7 +31,7 @@ genome_urls = {
     "oryza_sativa": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/oryza_sativa/dna/Oryza_sativa.MSU6.{0}.dna.toplevel.fa.gz",
     "arabidopsis_thaliana": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.{0}.dna.toplevel.fa.gz",
     "brachypodium_distachyon": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/brachypodium_distachyon/dna/Brachypodium_distachyon.v1.0.{0}.dna.toplevel.fa.gz",
-    "solanum_lycopersicum": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/solanum_lycopersicum/dna/Solanum_lycopersicum.SL2.40.{0}.dna.toplevel.fa.gz"
+    "solanum_lycopersicum": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/solanum_lycopersicum/dna/Solanum_lycopersicum.SL2.40.{0}.dna.toplevel.fa.gz",
 }
 
 print("Downloading genomes")
@@ -105,6 +107,7 @@ promoterome_urls = {
     "oryza_sativa": "ftp://ftp.plantbiology.msu.edu/pub/data/Eukaryotic_Projects/o_sativa/annotation_dbs/pseudomolecules/version_6.0/all.dir/all.1kUpstream.gz",
     "arabidopsis_thaliana": "ftp://ftp.arabidopsis.org/home/tair/Sequences/blast_datasets/TAIR10_blastsets/upstream_sequences/TAIR10_upstream_1000_translation_start_20101028",
     "brachypodium_distachyon": "ftp://brachypodium.org/brachypodium.org/Annotation/Bdistachyon.MIPS_1_2.promoter.1000.fa.gz",
+    "gasterosteus_aculeatus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/gasAcu1/bigZips/upstream1000.fa.gz",
 }
 
 for sequence_name, sequence_url in promoterome_urls.iteritems():
