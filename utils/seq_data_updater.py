@@ -18,14 +18,13 @@ with open(version_dump_filepath, "rb") as versions_file:
     sequence_versions = pickle.load(versions_file)
 
 #genome sequences
-#gasterosteus_aculeatus (stickleback) genome is at ftp://hgdownload.cse.ucsc.edu/goldenPath/gasAcu1/bigZips/chromFa.tar.gz
-#it isn't automatically updatable, tar.gz file contains each chromosome as individual file
 
 genome_urls = {
     "homo_sapiens": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.{0}.dna.toplevel.fa.gz",
     "drosophila_melanogaster": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/drosophila_melanogaster/dna/Drosophila_melanogaster.BDGP5.{0}.dna.toplevel.fa.gz",
     "caenorhabditis_elegans": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/caenorhabditis_elegans/dna/Caenorhabditis_elegans.WBcel215.{0}.dna.toplevel.fa.gz",
     "danio_rerio": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/danio_rerio/dna/Danio_rerio.Zv9.{0}.dna.toplevel.fa.gz",
+    "gasterosteus_aculeatus": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/gasterosteus_aculeatus/dna/Gasterosteus_aculeatus.BROADS1.{0}.dna.toplevel.fa.gz",
     "mus_musculus": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/mus_musculus/dna/Mus_musculus.GRCm38.{0}.dna.toplevel.fa.gz",
     "rattus_norvegicus": "ftp://ftp.ensembl.org/pub/release-{0}/fasta/rattus_norvegicus/dna/Rattus_norvegicus.Rnor_5.0.{0}.dna.toplevel.fa.gz",
     "oryza_sativa": "ftp://ftp.ensemblgenomes.org/pub/plants/release-{0}/fasta/oryza_sativa/dna/Oryza_sativa.MSU6.{0}.dna.toplevel.fa.gz",
