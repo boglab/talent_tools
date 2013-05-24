@@ -46,6 +46,9 @@ if redis_found:
         
         def __init__(self, logger, assembly_id):
             
+            if assembly_id == "NA":
+                return
+            
             self.conn = redis.StrictRedis(host=REDIS_SERVER_HOSTNAME, port=REDIS_SERVER_PORT, db=1)
             
             try:
