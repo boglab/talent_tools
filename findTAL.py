@@ -221,8 +221,8 @@ def RunFindTALTask(options):
                 check_fasta_pasta(maybe_entrez_file.file)
                 
                 for record in FastaIterator(maybe_entrez_file.file, alphabet=generic_dna):
-                    if len(record.seq) > 300000000:
-                        raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 300 megabases in size")
+                    if len(record.seq) > 316000000:
+                        raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 316 megabases in size")
             
             offtarget_seq_filename = ""
             
