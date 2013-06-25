@@ -38,7 +38,7 @@ if redis_found:
     
     class CachedEntrezFile(object):
         
-        WRITE_LOCK_DURATION = 3600
+        WRITE_LOCK_DURATION = 18000
         READ_LOCK_DURATION = 36000
         
         CACHED_FILE_DIR = BASE_DIR + "/cached_gb_files"
