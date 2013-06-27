@@ -319,6 +319,9 @@ else:
         
         def __init__(self, logger, assembly_id):
             
+            if assembly_id == "NA":
+                return
+            
             try:
                 
                 Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
