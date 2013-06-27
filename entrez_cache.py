@@ -15,6 +15,9 @@ try:
 except ImportError:
     redis_found = False
 
+Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
+Entrez.tool = "https://tale-nt.cac.cornell.edu"
+
 # modified version of Entrez.efetch
 def efetch_post(db, **keywds):
     cgi='http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
@@ -52,9 +55,6 @@ if redis_found:
             self.conn = redis.StrictRedis(host=REDIS_SERVER_HOSTNAME, port=REDIS_SERVER_PORT, db=1)
             
             try:
-                
-                Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
-                Entrez.tool = "https://tale-nt.cac.cornell.edu"
                 
                 ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_refseq")
                 erecord = Entrez.read(ehandle)
@@ -323,9 +323,6 @@ else:
                 return
             
             try:
-                
-                Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
-                Entrez.tool = "https://tale-nt.cac.cornell.edu"
                 
                 ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_refseq")
                 erecord = Entrez.read(ehandle)
