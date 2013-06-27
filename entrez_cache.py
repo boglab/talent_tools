@@ -33,13 +33,76 @@ def efetch_post(db, **keywds):
     variables.update(keywords)
     return Entrez._open(cgi, variables, post=True)
 
+def _ncbi_search_id(cached_file, logger, db, dbfrom, linkname, assembly_id):
+    
+    ehandle = Entrez.elink(db=db, dbfrom=dbfrom, id=assembly_id, linkname=linkname)
+    erecord = Entrez.read(ehandle)
+    ehandle.close()
+    
+    canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
+    
+    if len(canonical_assembly_ids) > 0:
+        
+        cached_file.assembly_id = canonical_assembly_ids[0]
+        
+        if len(canonical_assembly_ids) > 1:
+            logger("Warning: NCBI search for assembly ID returned more than 1 record, chose the first")
+    
+    if len(erecord[0]["LinkSetDb"]) != 0:
+        cached_file.nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
+
+def _ncbi_search_term(cached_file, logger, db, term):
+    
+    ehandle = Entrez.esearch(db="nucleotide", term=term)
+    erecord = Entrez.read(ehandle)
+    ehandle.close()
+    
+    if int(erecord["Count"]) != 0:
+        
+        cached_file.assembly_id = "nucleotide_" + erecord["IdList"][0]
+        cached_file.nuc_seq_ids = [erecord["IdList"][0]]
+        
+        if int(erecord["Count"]) > 1:
+            logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, chose the first")
 
 # redis locking
 # http://www.dr-josiah.com/2012/01/creating-lock-with-redis.html
 
+class BaseCachedEntrezFile(object):
+    
+    def __init__(self, logger, assembly_id):
+        
+        self.assembly_id = None
+        self.nuc_seq_ids = []
+        
+        try:
+            
+            _ncbi_search_id(self, logger, "nuccore", "assembly", "assembly_nuccore_refseq", assembly_id)
+            
+            if len(self.nuc_seq_ids) == 0:
+                
+                logger("No RefSeq sequences available for NCBI assembly ID, checking for matching GenBank sequences.")
+                    
+                _ncbi_search_id(self, logger, "nuccore", "assembly", "assembly_nuccore_insdc", assembly_id)
+                
+                if len(self.nuc_seq_ids) == 0:
+                    
+                    logger("No GenBank sequences available for NCBI assembly ID, checking if ID matches nucleotide sequence")
+                    
+                    _ncbi_search_term(self, logger, "nucleotide", assembly_id)
+                    
+                    if len(self.nuc_seq_ids) == 0:
+                        raise TaskError("No assemblies or nucleotide sequences found for given NCBI ID")
+                    
+                    if self.assembly_id == None:
+                        self.assembly_id = "odd_but_ok_" + assembly_id
+            
+        except (IOError, urllib2.HTTPError):
+            raise TaskError("Invalid NCBI ID provided")
+
 if redis_found:
     
-    class CachedEntrezFile(object):
+    class CachedEntrezFile(BaseCachedEntrezFile):
         
         WRITE_LOCK_DURATION = 18000
         READ_LOCK_DURATION = 36000
@@ -54,72 +117,7 @@ if redis_found:
             
             self.conn = redis.StrictRedis(host=REDIS_SERVER_HOSTNAME, port=REDIS_SERVER_PORT, db=1)
             
-            try:
-                
-                ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_refseq")
-                erecord = Entrez.read(ehandle)
-                ehandle.close()
-                
-                canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
-                
-                if len(canonical_assembly_ids) == 0:
-                    logger("Warning: NCBI search for assembly ID returned more than 1 record, choosing the first")
-                
-                self.assembly_id = canonical_assembly_ids[0]
-                
-                nuc_seq_ids = []
-                
-                if len(erecord[0]["LinkSetDb"]) != 0:
-                    nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
-                
-                if len(nuc_seq_ids) == 0:
-                    
-                    ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_insdc")
-                    erecord = Entrez.read(ehandle)
-                    ehandle.close()
-                    
-                    canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
-                    
-                    if len(canonical_assembly_ids) == 0:
-                        logger("Warning: NCBI search for assembly ID returned more than 1 record, choosing the first")
-                    
-                    self.assembly_id = canonical_assembly_ids[0]
-                    
-                    nuc_seq_ids = []
-                    
-                    if len(erecord[0]["LinkSetDb"]) != 0:
-                        nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
-                    
-                    if len(nuc_seq_ids) == 0:
-                        
-                        logger("Provided NCBI ID did not match an assembly, or matched an assembly with no associated sequences")
-                        logger("Checking if NCBI ID matches nucleotide sequence")
-                        
-                        ehandle = Entrez.esearch(db="nucleotide", term=assembly_id)
-                        erecord = Entrez.read(ehandle)
-                        ehandle.close()
-                        
-                        if int(erecord["Count"]) != 0:
-                            
-                            if int(erecord["Count"]) > 1:
-                                logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, choosing the first")
-                            
-                            self.assembly_id = "nucleotide_" + erecord["IdList"][0]
-                            nuc_seq_ids.append(erecord["IdList"][0])
-                            
-                        else:
-                            raise TaskError("No assemblies or nucleotide sequences found for given ID")
-                
-                self.nuc_seq_ids = nuc_seq_ids
-                
-                #search_handle = Entrez.esearch(db="nucleotide", term=assembly_id)
-                #search_record = Entrez.read(search_handle)
-                #search_handle.close()
-                #if int(search_record["Count"]) < 1:
-                #    raise TaskError("Invalid assembly ID provided")
-                
-            except (IOError, urllib2.HTTPError):
-                raise TaskError("Invalid NCBI ID provided")
+            super(CachedEntrezFile, self).__init__(logger, assembly_id)
             
             self.lock_name = "gb_cache:%s" % self.assembly_id
             self.uuid = str(uuid.uuid4())
@@ -269,7 +267,6 @@ if redis_found:
                 except redis.exceptions.WatchError:
                     pass
             
-            
             self.file = open(self.filepath, "r")
             
             return self
@@ -313,57 +310,17 @@ if redis_found:
             
             print("Reader for key %s released" % self.lock_name)
             
+        
 else:
     
-    class CachedEntrezFile(object):
+    class CachedEntrezFile(BaseCachedEntrezFile):
         
         def __init__(self, logger, assembly_id):
             
             if assembly_id == "NA":
                 return
             
-            try:
-                
-                ehandle = Entrez.elink(db="nuccore", dbfrom="assembly", id=assembly_id, linkname="assembly_nuccore_refseq")
-                erecord = Entrez.read(ehandle)
-                ehandle.close()
-                
-                canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
-                
-                if len(canonical_assembly_ids) == 0:
-                    logger("Warning: NCBI search for assembly ID returned more than 1 record, choosing the first")
-                
-                self.assembly_id = canonical_assembly_ids[0]
-                
-                nuc_seq_ids = []
-                
-                if len(erecord[0]["LinkSetDb"]) != 0:
-                    nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
-                
-                if len(nuc_seq_ids) == 0:
-                    
-                    logger("Provided NCBI ID did not match an assembly, or matched an assembly with no associated sequences")
-                    logger("Checking if NCBI ID matches nucleotide sequence")
-                    
-                    ehandle = Entrez.esearch(db="nucleotide", term=assembly_id)
-                    erecord = Entrez.read(ehandle)
-                    ehandle.close()
-                    
-                    if int(erecord["Count"]) != 0:
-                        
-                        if int(erecord["Count"]) > 1:
-                            logger("Warning: NCBI search for nucleotide sequence ID returned more than 1 record, choosing the first")
-                        
-                        self.assembly_id = "nucleotide:" + erecord["IdList"][0]
-                        nuc_seq_ids.append(erecord["IdList"][0])
-                        
-                    else:
-                        raise TaskError("No assemblies or nucleotide sequences found for given ID")
-                
-                self.nuc_seq_ids = nuc_seq_ids
-                
-            except (IOError, urllib2.HTTPError):
-                raise TaskError("Invalid NCBI ID provided")
+            super(CachedEntrezFile, self).__init__(logger, assembly_id)
             
             self.file = None
             self.filepath = ""
@@ -401,4 +358,5 @@ else:
             
             if self.file is not None:
                 self.file.close()
-    
+            
+        
