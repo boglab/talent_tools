@@ -59,13 +59,11 @@ The command for running findTAL.py with the default parameters from the site is:
 python findTAL.py --filter '0' --gspec --min '15' --max '30' --arraymin '15' --arraymax '20' --fasta 'filemx4P32.fasta' --outpath 'fileOgILYO.txt' --logpath '79637.log'
 ```
 
-* --min and --max are the minimum and maximum spacer size
-* --arraymin  and --arraymax are the minimum and maximum RVD sequence size
+* --min and --max are the minimum and maximum spacer length
+* --arraymin  and --arraymax are the minimum and maximum RVD sequence length
 * --fasta is the path to the file containing your input sequences in [FASTA](http://en.wikipedia.org/wiki/FASTA_format) format
 * --gspec tells the script to use NH instead of NN for G
 * --outpath is where you want the output file to go
 * --logpath is the path to write the process log to; if you leave this out it will print this to stdout on your terminal
 
-To search for off-target sites in a custom genome, run findTAL.py as above, but add the option '--offtargets-fasta PATH_TO_CUSTOM_GENOME'
-
-
+To search for off-target sites in a custom genome, run findTAL.py as above, but add the options '--offtargets --offtargets-fasta PATH_TO_CUSTOM_GENOME'
