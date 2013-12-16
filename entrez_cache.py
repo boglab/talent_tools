@@ -33,25 +33,33 @@ def efetch_post(db, **keywds):
     variables.update(keywords)
     return Entrez._open(cgi, variables, post=True)
 
-def _ncbi_search_id(cached_file, logger, db, dbfrom, linkname, assembly_id):
+def _ncbi_search_assemblies(cached_file, logger, assembly_id):
+    
+    ehandle = Entrez.esearch(db="assembly", term=assembly_id)
+    erecord = Entrez.read(ehandle)
+    ehandle.close()
+    
+    if int(erecord["Count"]) != 0:
+        
+        canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
+        
+        if len(canonical_assembly_ids) > 0:
+            
+            cached_file.assembly_id = canonical_assembly_ids[0]
+            
+            if len(canonical_assembly_ids) > 1:
+                logger("Warning: NCBI search for assembly ID returned more than 1 record, chose the first")
+
+def _ncbi_links_for_id(cached_file, logger, db, dbfrom, linkname, assembly_id):
     
     ehandle = Entrez.elink(db=db, dbfrom=dbfrom, id=assembly_id, linkname=linkname)
     erecord = Entrez.read(ehandle)
     ehandle.close()
     
-    canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
-    
-    if len(canonical_assembly_ids) > 0:
-        
-        cached_file.assembly_id = canonical_assembly_ids[0]
-        
-        if len(canonical_assembly_ids) > 1:
-            logger("Warning: NCBI search for assembly ID returned more than 1 record, chose the first")
-    
     if len(erecord[0]["LinkSetDb"]) != 0:
         cached_file.nuc_seq_ids = [link["Id"] for link in erecord[0]["LinkSetDb"][0]["Link"]]
 
-def _ncbi_search_term(cached_file, logger, db, term):
+def _ncbi_search_nuccore(cached_file, logger, db, term):
     
     ehandle = Entrez.esearch(db="nucleotide", term=term)
     erecord = Entrez.read(ehandle)
@@ -77,25 +85,35 @@ class BaseCachedEntrezFile(object):
         
         try:
             
-            _ncbi_search_id(self, logger, "nuccore", "assembly", "assembly_nuccore_refseq", assembly_id)
+            _ncbi_search_assemblies(self, logger, assembly_id)
             
-            if len(self.nuc_seq_ids) == 0:
+            if self.assembly_id is not None:
                 
-                logger("No RefSeq sequences available for NCBI assembly ID, checking for matching GenBank sequences.")
-                    
-                _ncbi_search_id(self, logger, "nuccore", "assembly", "assembly_nuccore_insdc", assembly_id)
+                logger("ID matched an NCBI assembly, checking for linked RefSeq sequences")
+                
+                _ncbi_links_for_id(self, logger, "nuccore", "assembly", "assembly_nuccore_refseq", self.assembly_id)
                 
                 if len(self.nuc_seq_ids) == 0:
                     
-                    logger("No GenBank sequences available for NCBI assembly ID, checking if ID matches nucleotide sequence")
+                    logger("No RefSeq sequences available for NCBI assembly ID, checking for matching GenBank sequences.")
                     
-                    _ncbi_search_term(self, logger, "nucleotide", assembly_id)
+                    _ncbi_links_for_id(self, logger, "nuccore", "assembly", "assembly_nuccore_insdc", self.assembly_id)
                     
                     if len(self.nuc_seq_ids) == 0:
-                        raise TaskError("No assemblies or nucleotide sequences found for given NCBI ID")
+                        
+                        logger("No GenBank sequences available for NCBI assembly ID, checking if ID matches nucleotide sequence")
+                        
+                        raise TaskError("No linked RefSeq or GenBank sequences for found for the given assembly ID")
                     
-                    if self.assembly_id == None:
-                        self.assembly_id = "odd_but_ok_" + assembly_id
+                
+            else:
+                
+                logger("ID did not match an NCBI assembly, searching for nucleotide sequences")
+                
+                _ncbi_search_nuccore(self, logger, "nucleotide", assembly_id)
+                
+                if len(self.nuc_seq_ids) == 0:
+                    raise TaskError("The given ID did not match any assemblies or nucleotide sequences")
             
         except (IOError, urllib2.HTTPError):
             raise TaskError("Invalid NCBI ID provided")
