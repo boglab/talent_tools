@@ -194,7 +194,7 @@ def validateOptions(options):
                 gene_length_total += len(gene.seq)
             
             if gene_length_total > 1000:
-                raise TaskError("Off-target counting is only available for inputs of 1000 bases or less")
+                raise TaskError("Off-target counting is only available when designing TALENs for sequences that are 1000 bases or less")
 
 def RunFindTALTask(options):
     
