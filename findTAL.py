@@ -2,7 +2,7 @@
 
 from Bio.Alphabet import generic_dna
 
-from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS
+from talconfig import BASE_DIR, GENOME_FILE, PROMOTEROME_FILE, VALID_GENOME_ORGANISMS, VALID_PROMOTEROME_ORGANISMS, OFFTARGET_COUNTING_SIZE_LIMIT
 from talutil import validate_options_handler, OptParser, FastaIterator, create_logger, check_fasta_pasta, OptionObject, TaskError, reverseComplement, Conditional
 from entrez_cache import CachedEntrezFile
 
@@ -221,8 +221,8 @@ def RunFindTALTask(options):
                 check_fasta_pasta(maybe_entrez_file.file)
                 
                 for record in FastaIterator(maybe_entrez_file.file, alphabet=generic_dna):
-                    if len(record.seq) > 316000000:
-                        raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under 316 megabases in size")
+                    if len(record.seq) > OFFTARGET_COUNTING_SIZE_LIMIT:
+                        raise TaskError("Off-Target counting is only supported for NCBI records where all individual sequences are under %d megabases in size" % (OFFTARGET_COUNTING_SIZE_LIMIT / 1000000))
             
             offtarget_seq_filename = ""
             

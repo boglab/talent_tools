@@ -10,3 +10,4 @@ VALID_GENOME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mu
 VALID_PROMOTEROME_ORGANISMS = ['drosophila_melanogaster', 'arabidopsis_thaliana', 'mus_musculus', 'oryza_sativa', 'caenorhabditis_elegans', 'danio_rerio', 'homo_sapiens', 'rattus_norvegicus', 'brachypodium_distachyon', 'gasterosteus_aculeatus']
 REDIS_SERVER_HOSTNAME = "localhost"
 REDIS_SERVER_PORT = 6379
+OFFTARGET_COUNTING_SIZE_LIMIT = 316000000
