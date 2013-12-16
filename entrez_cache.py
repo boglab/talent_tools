@@ -106,6 +106,8 @@ class BaseCachedEntrezFile(object):
                         raise TaskError("No linked RefSeq or GenBank sequences for found for the given assembly ID")
                     
                 
+                logger("Sequences for assembly located, downloading now")
+                
             else:
                 
                 logger("ID did not match an NCBI assembly, searching for nucleotide sequences")
@@ -114,6 +116,8 @@ class BaseCachedEntrezFile(object):
                 
                 if len(self.nuc_seq_ids) == 0:
                     raise TaskError("The given ID did not match any assemblies or nucleotide sequences")
+                
+                logger("Nucleotide sequence for ID located, downloading now")
             
         except (IOError, urllib2.HTTPError):
             raise TaskError("Invalid NCBI ID provided")
