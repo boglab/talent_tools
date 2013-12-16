@@ -493,7 +493,7 @@ if __name__ == '__main__':
         if options.check_offtargets:
             job_queue = "findtal_offtargets"
         else:
-            job_queue = "findtal"
+            job_queue = "findsingletal"
         
         FindSingleTALSiteTask.apply_async(kwargs=vars(options), queue=job_queue)
         
