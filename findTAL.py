@@ -22,7 +22,7 @@ from itertools import ifilterfalse
 
 tfcount_found = True
 try:
-    from btfcount import TargetFinderCountTask
+    from btfcount import PairedTargetFinderCountTask
 except ImportError:
     tfcount_found = False
 
