@@ -485,7 +485,7 @@ def RunFindTALTask(options):
                     off_target_pairs.append([binding_site.seq1_rvd, binding_site.seq2_rvd])
                 
                 
-                off_target_counts = TargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
+                off_target_counts = PairedTargetFinderCountTask(offtarget_seq_filename, options.logFilepath, options.cupstream, 3.0, spacer_min, spacer_max, off_target_pairs)
                 
                 for i, binding_site in enumerate(binding_sites):
                     binding_site.offtarget_counts = off_target_counts[i]
