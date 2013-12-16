@@ -41,7 +41,7 @@ def _ncbi_search_assemblies(cached_file, logger, assembly_id):
     
     if int(erecord["Count"]) != 0:
         
-        canonical_assembly_ids = [x for x in erecord[0]["IdList"] if x != "-1"]
+        canonical_assembly_ids = [x for x in erecord["IdList"] if x != "-1"]
         
         if len(canonical_assembly_ids) > 0:
             
