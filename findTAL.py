@@ -157,6 +157,8 @@ def validateOptions(options):
     
     if options.offtargets_ncbi != "NA":
         
+        options.offtargets_ncbi = options.offtargets_ncbi.strip()
+        
         if options.offtargets_fasta != "NA" or options.genome or options.promoterome:
             raise TaskError("--offtargets-fasta, --genome and --promoterome options cannot be combined with --offtargets-ncbi")
         

@@ -34,6 +34,8 @@ def validateOptions(options):
     
     if options.ncbi != "NA":
         
+        options.ncbi = options.ncbi.strip()
+        
         if options.genome or options.promoterome:
             raise TaskError("--genome and --promoterome options cannot be combined with --ncbi")
         
