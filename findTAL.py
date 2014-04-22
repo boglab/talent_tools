@@ -59,7 +59,7 @@ class BindingSite:
 with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:
     NEB_RE_sites = pickle.load(re_dict_file)
 
-streubel_at_streak_re = re.compile('[AT]{5,}')
+streubel_at_streak_re = re.compile('[AT]{6,}')
 
 if celery_found:
     @task(base=BaseTask)
