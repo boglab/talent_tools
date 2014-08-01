@@ -103,8 +103,8 @@ if __name__ == '__main__':
     parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
     parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
     parser.add_option('-s', '--rvds2', dest='rvdString2', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
-    parser.add_option('-m', '--min', dest='min', type='int', default=None, help='the minimum spacer size to try')
-    parser.add_option('-x', '--max', dest='max', type='int', default=None, help='the maximum spacer size to try')
+    parser.add_option('-m', '--min', dest='min', type='int', default=15, help='the minimum spacer size to try')
+    parser.add_option('-x', '--max', dest='max', type='int', default=30, help='the maximum spacer size to try')
     #Drupal options
     parser.add_option('-p', '--outpath', dest='outputFilepath', type='string', default = 'NA', help='Template file path for output file')
     parser.add_option('-l', '--logpath', dest='logFilepath', type='string', default = 'NA', help='Process log file path')
