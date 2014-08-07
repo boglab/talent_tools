@@ -8,6 +8,8 @@ import pickle
 import subprocess
 import warnings
 
+from Bio import SeqIO
+
 sys.path.append('/opt/boglab')
 
 from talent.talconfig import BASE_DIR, GENOME_DIR, GENOME_FILE, PROMOTEROME_DIR, PROMOTEROME_FILE
@@ -103,7 +105,7 @@ promoterome_urls = {
     "danio_rerio": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Danio_rerio/bigZips/upstream1000.fa.gz",
     "mus_musculus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Mus_musculus/bigZips/upstream1000.fa.gz",
     "rattus_norvegicus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/currentGenomes/Rattus_norvegicus/bigZips/upstream1000.fa.gz",
-    "oryza_sativa": "http://rapdb.dna.affrc.go.jp/download/archive/irgsp1/IRGSP-1.0_1kb-upstream_2014-03-05.fasta.gz",
+    "oryza_sativa": "http://rapdb.dna.affrc.go.jp/download/archive/irgsp1/IRGSP-1.0_1kb-upstream_2014-06-25.fasta.gz",
     "arabidopsis_thaliana": "ftp://ftp.arabidopsis.org/home/tair/Sequences/blast_datasets/TAIR10_blastsets/upstream_sequences/TAIR10_upstream_1000_translation_start_20101028",
     "brachypodium_distachyon": "ftp://brachypodium.org/brachypodium.org/Annotation/Bdistachyon.MIPS_1_2.promoter.1000.fa.gz",
     "gasterosteus_aculeatus": "ftp://hgdownload.cse.ucsc.edu/goldenPath/gasAcu1/bigZips/upstream1000.fa.gz",
@@ -135,3 +137,20 @@ for sequence_name, sequence_url in promoterome_urls.iteritems():
     except urllib2.URLError:
         
         warnings.warn("Unable to download/update %s promoterome, remote file does not exist" % sequence_name)
+
+
+#Generate RAPDB exclusive promoters
+
+subprocess.check_call("wget -O %s %s" % ("/tmp/RAP-MSU.txt.gz", "http://rapdb.dna.affrc.go.jp/download/archive/RAP-MSU.txt.gz"), shell=True)
+subprocess.check_call("gunzip -c %s > %s" % ("/tmp/RAP-MSU.txt.gz", "/tmp/RAP-MSU.txt"), shell=True)
+
+with open("/tmp/RAP-MSU.txt", "r") as input_file:
+    rapdb_exclusive_ids = set()
+    for line in input_file:
+        split_line = line.rstrip().split('\t')
+        if len(split_line) == 2 and split_line[0] != "None" and split_line[1] == "None":
+            rapdb_exclusive_ids.add(split_line[0])
+
+keep_me = [seq for seq in SeqIO.parse(PROMOTEROME_FILE % "oryza_sativa", "fasta") if seq.id.split('-')[0].replace('t', 'g') in rapdb_exclusive_ids]
+
+SeqIO.write(keep_me, PROMOTEROME_FILE % "oryza_sativa_rapdb_only", "fasta")
