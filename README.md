@@ -2,7 +2,7 @@
 
 All source code is available under an ISC license.
 
-Copyright (c) 2011-2013, Nick Booher <njbooher@gmail.com> and Erin Doyle <edoyle@iastate.edu>.
+Copyright (c) 2011-2015, Nick Booher <njbooher@gmail.com> and Erin Doyle <edoyle@iastate.edu>.
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
