@@ -29,7 +29,7 @@ By default the tools expect to be located at /opt/boglab/talent. Changing this r
 1. In talconfig.py, change the value of BASE_DIR to the full path of the parent folder of boglab_tools
 2. In findTAL.py find the line that says 'with open(BASE_DIR + "/talent/re_dict_dump", "rb") as re_dict_file:' and change 'talent' to 'boglab_tools'
 
-Note that off-target counting with findTAL.py won't work unless [boglab_tfcount](https://github.com/njbooher/boglab_tfcount) is installed, and findRvdTAL.py and findPairedRvdTALs.py won't work unless you install the C libraries and cython wrappers from [boglab_talesf](https://github.com/njbooher/boglab_talesf) and [boglab_talesf/paired](https://github.com/njbooher/boglab_talesf/tree/paired).
+Note that off-target counting with findTAL.py won't work unless [tfcount](https://github.com/boglab/tfcount) is installed, and findRvdTAL.py and findPairedRvdTALs.py won't work unless you install the C libraries and cython wrappers from [talesf](https://github.com/boglab/talesf) and [talesf/paired](https://github.com/boglab/talesf/tree/paired).
 
 # Usage
 
