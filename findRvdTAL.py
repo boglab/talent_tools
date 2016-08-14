@@ -79,7 +79,7 @@ def RunTalesfTask(options):
         else:
             seqFilename = options.fasta
         
-        result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 4, 1 if options.use_gpu else 0, options.organism if options.genome else "")
+        result = ScoreTalesfTask(seqFilename, options.rvdString, options.outputFilepath, options.logFilepath, forwardOnly, options.cupstream, options.cutoff, 4, options.organism if options.genome else "")
         
         if(result == 1):
             raise TaskError()
@@ -97,7 +97,6 @@ if __name__ == '__main__':
     parser.add_option('-o', '--organism', dest='organism', type = 'string', default='NA', help='Name of organism for the genome to be searched.')
     # program options
     parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
-    parser.add_option('-g', '--usegpu', dest='use_gpu', action = 'store_true', default = False, help='Use GPU acceleration. Has no effect if GPU accelerated paired target finder isn\'t installed.')
     parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
     parser.add_option('-c', '--revcomp', dest='revcomp', action = 'store_true', default = False, help='Search the reverse complement of the input FASTA sequences')
     parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')

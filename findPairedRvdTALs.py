@@ -80,7 +80,7 @@ def RunPairedTalesfTask(options):
         else:
             seqFilename = options.fasta
         
-        result = ScorePairedTalesfTask(seqFilename, options.rvdString, options.rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.dimer, options.cutoff, options.min, options.max, 4, 1 if options.use_gpu else 0, options.organism if options.genome else "")
+        result = ScorePairedTalesfTask(seqFilename, options.rvdString, options.rvdString2, options.outputFilepath, options.logFilepath, options.cupstream, options.dimer, options.cutoff, options.min, options.max, 4, options.organism if options.genome else "")
         
         if(result == 1):
             raise TaskError()
@@ -99,7 +99,6 @@ if __name__ == '__main__':
     # program options
     parser.add_option('-u', '--cupstream', dest='cupstream', type='int', default = 0, help='1 to look for C instead of T, 2 to look for either')
     parser.add_option('-d', '--dimer', dest='dimer', type='int', default = 0, help='1 to look for heterodimers only, 2 to look for homodimers only')
-    parser.add_option('-g', '--usegpu', dest='use_gpu', action = 'store_true', default = False, help='Use GPU acceleration. Has no effect if GPU accelerated paired target finder isn\'t installed.')
     parser.add_option('-t', '--cutoff', dest='cutoff', type='float', default = 3.0, help='The threshold score that results must meet')
     parser.add_option('-r', '--rvds', dest='rvdString', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
     parser.add_option('-s', '--rvds2', dest='rvdString2', type = 'string', default='NA', help='RVD sequence seperated by spaces or underscores.')
