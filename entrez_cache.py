@@ -18,21 +18,6 @@ except ImportError:
 Entrez.email = "6e6a62393840636f726e656c6c2e656475".decode("hex")
 Entrez.tool = "https://tale-nt.cac.cornell.edu"
 
-# modified version of Entrez.efetch
-def efetch_post(db, **keywds):
-    cgi='http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
-    variables = {'db' : db}
-    keywords = keywds
-    if "id" in keywds and isinstance(keywds["id"], list):
-        #Fix for NCBI change (probably part of EFetch 2,0, Feb 2012) where
-        #a list of ID strings now gives HTTP Error 500: Internal server error
-        #This was turned into ...&id=22307645&id=22303114&... which used to work
-        #while now the NCBI appear to insist on ...&id=22301129,22299544,...
-        keywords = keywds.copy() #Don't alter input dict!
-        keywords["id"] = ",".join(keywds["id"])
-    variables.update(keywords)
-    return Entrez._open(cgi, variables, post=True)
-
 def _ncbi_search_assemblies(cached_file, logger, assembly_id):
     
     ehandle = Entrez.esearch(db="assembly", term=assembly_id)
@@ -195,7 +180,7 @@ if redis_found:
                                     
                                     print("start %d remaining %d end %d" % (start, remaining, end))
                                     
-                                    fetch_handle = efetch_post(db="nucleotide", id=self.nuc_seq_ids[start:end], rettype="fasta", retmode="text")
+                                    fetch_handle = Entrez.efetch(db="nucleotide", id=self.nuc_seq_ids[start:end], rettype="fasta", retmode="text")
                                     
                                     for line in fetch_handle:
                                         cached_file.write(line)
@@ -351,7 +336,7 @@ else:
             
             try:
                 
-                fetch_handle = efetch_post(db="nucleotide", id=self.nuc_seq_ids, rettype="fasta", retmode="text")
+                fetch_handle = Entrez.efetch(db="nucleotide", id=self.nuc_seq_ids, rettype="fasta", retmode="text")
                 self.file = tempfile.NamedTemporaryFile()
                 
                 for i in range(int(math.ceil(float(len(self.nuc_seq_ids)) / 5000))):
@@ -360,7 +345,7 @@ else:
                     remaining = len(self.nuc_seq_ids) - start
                     end = start + remaining if remaining < 5000 else start + 5000
                     
-                    fetch_handle = efetch_post(db="nucleotide", id=self.nuc_seq_ids[start:end], rettype="fasta", retmode="text")
+                    fetch_handle = Entrez.efetch(db="nucleotide", id=self.nuc_seq_ids[start:end], rettype="fasta", retmode="text")
                     
                     for line in fetch_handle:
                         self.file.write(line)
